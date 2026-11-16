@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exiting iframe...</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            text-align: center;
+            background: #f5f5f5;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #ddd;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .message { color: #666; max-width: 400px; }
+        .fallback-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .fallback-link:hover { background: #555; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="message" id="message">Exiting iframe and loading the main page…</p>
+    <a id="fallbackLink" class="fallback-link hidden" href="#" rel="noopener">Click here if not redirected</a>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // Configuration - change this to your target URL
+            var TARGET_URL = 'https://helloworled.github.io/digital_class_sign_webpage/';
+            // Optional: allow override via query param ?url=...
+            var urlParam = new URLSearchParams(window.location.search).get('url');
+            if (urlParam) {
+                try {
+                    TARGET_URL = decodeURIComponent(urlParam);
+                } catch (e) {}
+            }
+
+            var messageEl = document.getElementById('message');
+            var fallbackLink = document.getElementById('fallbackLink');
+            fallbackLink.href = TARGET_URL;
+
+            function showFallback() {
+                messageEl.textContent = 'Automatic redirect was blocked. Please click the button below:';
+                fallbackLink.classList.remove('hidden');
+            }
+
+            // Method 1: Try to break out via top.location (works for same-origin)
+            try {
+                if (window.top !== window.self) {
+                    window.top.location.href = TARGET_URL;
+                    // If we reach here, the navigation started
+                    return;
+                }
+            } catch (e) {
+                // Cross-origin iframe - top.location is blocked
+            }
+
+            // Method 2: Try window.open with _top (may be blocked by popup blocker)
+            var opened = window.open(TARGET_URL, '_top');
+            if (opened) {
+                // Popup succeeded, close this window/tab
+                window.close();
+                return;
+            }
+
+            // Method 3: Meta refresh fallback (works even if JS is limited)
+            var meta = document.createElement('meta');
+            meta.httpEquiv = 'refresh';
+            meta.content = '0;url=' + TARGET_URL;
+            document.head.appendChild(meta);
+
+            // Method 4: Show manual fallback link after a short delay
+            setTimeout(showFallback, 1500);
+
+            // Also listen for visibility change - if page becomes visible, we're out
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    // We're now in the top window, redirect worked
+                }
+            });
+        })();
+    </script>
+</head>
+</html>

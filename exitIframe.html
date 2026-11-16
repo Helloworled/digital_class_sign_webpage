@@ -1,109 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exiting iframe...</title>
+    <title>Exit Iframe</title>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
+            max-width: 600px;
+            margin: 2rem auto;
             padding: 1rem;
-            text-align: center;
-            background: #f5f5f5;
+            line-height: 1.6;
+            color: #222;
         }
+
+        .titlebar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #8883;
+        }
+
+        .titlebar a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .titlebar a:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #fff;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-iframe {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-top {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .method-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .method-list li {
+            margin: 0.5rem 0;
+        }
+
+        .method-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .method-link:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .method-link:active {
+            background: #dee2e6;
+        }
+
+        .method-link.primary {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .method-link.primary:hover {
+            background: #555;
+            border-color: #555;
+        }
+
+        .method-desc {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .url-display {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #666;
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #ddd;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ddd;
             border-top-color: #333;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
+            margin-left: 0.5rem;
+            vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .message { color: #666; max-width: 400px; }
-        .fallback-link {
-            display: inline-block;
-            margin-top: 1rem;
-            padding: 0.75rem 1.5rem;
-            background: #333;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
-        .fallback-link:hover { background: #555; }
-        .hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body>
-    <div class="spinner" aria-hidden="true"></div>
-    <p class="message" id="message">Exiting iframe and loading the main page…</p>
-    <a id="fallbackLink" class="fallback-link hidden" href="#" rel="noopener">Click here if not redirected</a>
+    <div class="titlebar">
+        <h1>Exit Iframe</h1>
+        <a href="index.html">← Back to Landing Page</a>
+    </div>
+
+    <div class="card">
+        <h2>Frame Status</h2>
+        <p>
+            <strong>In iframe:</strong>
+            <span id="iframeStatus" class="status-badge">Checking…</span>
+        </p>
+        <p>
+            <strong>Target URL:</strong><br>
+            <span id="targetUrl" class="url-display"></span>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Choose Exit Method</h2>
+        <p>Click one of the links below to exit the iframe. Methods are ordered by reliability.</p>
+        <ul class="method-list" id="methodList">
+            <!-- Methods inserted by JS -->
+        </ul>
+    </div>
+
+    <div class="card" id="loadingCard" class="hidden">
+        <h2>Redirecting…</h2>
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="message" id="loadingMessage">Loading target page…</p>
+        <p><a id="manualFallback" class="method-link" href="#" rel="noopener">Click here if not redirected</a></p>
+    </div>
 
     <script>
-        (function() {
+        (function () {
             'use strict';
 
-            // Configuration - change this to your target URL
+            // Configuration
             var TARGET_URL = 'https://helloworled.github.io/digital_class_sign_webpage/';
-            // Optional: allow override via query param ?url=...
             var urlParam = new URLSearchParams(window.location.search).get('url');
             if (urlParam) {
-                try {
-                    TARGET_URL = decodeURIComponent(urlParam);
-                } catch (e) {}
+                try { TARGET_URL = decodeURIComponent(urlParam); } catch (e) { }
             }
 
-            var messageEl = document.getElementById('message');
-            var fallbackLink = document.getElementById('fallbackLink');
-            fallbackLink.href = TARGET_URL;
+            var iframeStatusEl = document.getElementById('iframeStatus');
+            var targetUrlEl = document.getElementById('targetUrl');
+            var methodListEl = document.getElementById('methodList');
+            var loadingCard = document.getElementById('loadingCard');
+            var loadingMessage = document.getElementById('loadingMessage');
+            var manualFallback = document.getElementById('manualFallback');
 
-            function showFallback() {
-                messageEl.textContent = 'Automatic redirect was blocked. Please click the button below:';
-                fallbackLink.classList.remove('hidden');
-            }
+            targetUrlEl.textContent = TARGET_URL;
+            manualFallback.href = TARGET_URL;
 
-            // Method 1: Try to break out via top.location (works for same-origin)
+            // Detect iframe status
+            var inIframe = false;
+            var crossOrigin = false;
             try {
-                if (window.top !== window.self) {
-                    window.top.location.href = TARGET_URL;
-                    // If we reach here, the navigation started
-                    return;
+                inIframe = window.top !== window.self;
+                // Test cross-origin access
+                if (inIframe) {
+                    var _ = window.top.location.href; // throws if cross-origin
                 }
             } catch (e) {
-                // Cross-origin iframe - top.location is blocked
+                crossOrigin = true;
             }
 
-            // Method 2: Try window.open with _top (may be blocked by popup blocker)
-            var opened = window.open(TARGET_URL, '_top');
-            if (opened) {
-                // Popup succeeded, close this window/tab
-                window.close();
-                return;
+            if (inIframe) {
+                iframeStatusEl.textContent = crossOrigin ? 'Yes (cross-origin)' : 'Yes (same-origin)';
+                iframeStatusEl.className = 'status-badge status-iframe';
+            } else {
+                iframeStatusEl.textContent = 'No (already in top window)';
+                iframeStatusEl.className = 'status-badge status-top';
             }
 
-            // Method 3: Meta refresh fallback (works even if JS is limited)
-            var meta = document.createElement('meta');
-            meta.httpEquiv = 'refresh';
-            meta.content = '0;url=' + TARGET_URL;
-            document.head.appendChild(meta);
-
-            // Method 4: Show manual fallback link after a short delay
-            setTimeout(showFallback, 1500);
-
-            // Also listen for visibility change - if page becomes visible, we're out
-            document.addEventListener('visibilitychange', function() {
-                if (!document.hidden) {
-                    // We're now in the top window, redirect worked
+            // Define exit methods
+            var methods = [
+                {
+                    id: 'top-location',
+                    label: 'Method 1: top.location.href (same-origin only)',
+                    desc: 'Directly navigates the parent window. Works only for same-origin iframes.',
+                    action: function () {
+                        if (!inIframe) { showLoading('Already in top window'); return; }
+                        if (crossOrigin) { showLoading('Blocked: cross-origin iframe'); return; }
+                        try {
+                            window.top.location.href = TARGET_URL;
+                            showLoading('Navigating parent window…');
+                        } catch (e) { showLoading('Failed: ' + e.message); }
+                    }
+                },
+                {
+                    id: 'window-open-top',
+                    label: 'Method 2: window.open(url, "_top")',
+                    desc: 'Opens URL in top frame. May be blocked by popup blockers.',
+                    action: function () {
+                        var w = window.open(TARGET_URL, '_top');
+                        if (w) {
+                            showLoading('Opened in top window, closing this tab…');
+                            setTimeout(function () { try { window.close(); } catch (_) { } }, 500);
+                        } else {
+                            showLoading('Blocked by popup blocker');
+                        }
+                    }
+                },
+                {
+                    id: 'window-open-blank',
+                    label: 'Method 3: window.open(url, "_blank")',
+                    desc: 'Opens in new tab/window. Most reliable but leaves iframe page open.',
+                    action: function () {
+                        var w = window.open(TARGET_URL, '_blank', 'noopener,noreferrer');
+                        if (w) {
+                            showLoading('Opened in new tab');
+                        } else {
+                            showLoading('Blocked by popup blocker');
+                        }
+                    }
+                },
+                {
+                    id: 'meta-refresh',
+                    label: 'Method 4: Meta refresh redirect',
+                    desc: 'Uses HTML meta tag. Works even if JavaScript is restricted.',
+                    action: function () {
+                        var meta = document.createElement('meta');
+                        meta.httpEquiv = 'refresh';
+                        meta.content = '0;url=' + TARGET_URL;
+                        document.head.appendChild(meta);
+                        showLoading('Meta refresh triggered…');
+                    }
+                },
+                {
+                    id: 'manual-link',
+                    label: 'Method 5: Manual link (always works)',
+                    desc: 'Simple link you can click or right-click → "Open in new tab".',
+                    action: function () {
+                        // Just show the manual fallback
+                        showLoading('Click the link below');
+                    }
                 }
+            ];
+
+            // Render method list
+            methods.forEach(function (m, i) {
+                var li = document.createElement('li');
+                var isPrimary = i === 0;
+                var cls = 'method-link' + (isPrimary ? ' primary' : '');
+                li.innerHTML = '<a href="#" class="' + cls + '" data-method="' + m.id + '">' + m.label + '</a>' +
+                    '<div class="method-desc">' + m.desc + '</div>';
+                methodListEl.appendChild(li);
             });
+
+            // Bind clicks using multiple strategies for maximum compatibility
+            var links = methodListEl.querySelectorAll('a[data-method]');
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                var methodId = link.getAttribute('data-method');
+                var method = methods.find(function (m) { return m.id === methodId; });
+                if (!method) continue;
+
+                var handler = function (e) {
+                    e.preventDefault();
+                    method.action();
+                };
+
+                // Multiple binding strategies
+                link.addEventListener('click', handler);
+                link.onclick = handler;
+                link.setAttribute('onclick', '(' + handler.toString() + ')(event)');
+            }
+
+            function showLoading(msg) {
+                loadingCard.classList.remove('hidden');
+                loadingMessage.textContent = msg || 'Redirecting…';
+                manualFallback.href = TARGET_URL;
+                // Scroll to loading card
+                loadingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Auto-try first viable method after a short delay
+            if (inIframe) {
+                setTimeout(function () {
+                    if (inIframe && !crossOrigin) {
+                        // Same-origin: try top.location immediately
+                        methods[0].action();
+                    } else {
+                        // Cross-origin: try window.open _top
+                        methods[1].action();
+                    }
+                }, 500);
+            } else {
+                // Already in top window, just redirect
+                window.location.href = TARGET_URL;
+            }
         })();
     </script>
-</head>
+</body>
+
 </html>

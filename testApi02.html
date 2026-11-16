@@ -1,1029 +1,1234 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gesture-Gated Browser API Test Suite</title>
-<style>
-  /* Minimal, readable baseline styling */
-  :root { color-scheme: light dark; }
-  body {
-    font-family: system-ui, -apple-system, sans-serif;
-    line-height: 1.5;
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-  }
-  .titlebar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #8883;
-  }
-  .titlebar a {
-    text-decoration: none;
-    color: #333;
-    font-weight: 600;
-  }
-  .titlebar a:hover {
-    text-decoration: underline;
-  }
-  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-  h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #8884; padding-bottom: 0.3rem; }
-  p.note { font-size: 0.92rem; color: #666; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; }
-  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid #8883; vertical-align: middle; }
-  th { background: #8881; font-weight: 600; }
-  button { font: inherit; padding: 0.35rem 0.9rem; cursor: pointer; border: 1px solid #666; background: transparent; border-radius: 4px; font-weight: 600; white-space: nowrap; }
-  button:hover { background: #8882; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .status { font-weight: 700; font-size: 0.9rem; }
-  .status-pass { color: #0a7e3a; }
-  .status-fail { color: #b00020; }
-  .status-partial { color: #b86e00; }
-  .status-unknown { color: #666; }
-  .output { font-size: 0.85rem; color: #555; word-break: break-word; }
-  #video-preview { max-width: 320px; border-radius: 6px; display: none; margin-top: 0.5rem; }
-  .hidden { display: none !important; }
-  .media-area { margin: 0.5rem 0; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gesture-Gated Browser API Test Suite</title>
+  <style>
+    /* Minimal, readable baseline styling */
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .titlebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #8883;
+    }
+
+    .titlebar a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .titlebar a:hover {
+      text-decoration: underline;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.25rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      margin-top: 2rem;
+      border-bottom: 2px solid #8884;
+      padding-bottom: 0.3rem;
+    }
+
+    p.note {
+      font-size: 0.92rem;
+      color: #666;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.93rem;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #8883;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #8881;
+      font-weight: 600;
+    }
+
+    button {
+      font: inherit;
+      padding: 0.35rem 0.9rem;
+      cursor: pointer;
+      border: 1px solid #666;
+      background: transparent;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #8882;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .status {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .status-pass {
+      color: #0a7e3a;
+    }
+
+    .status-fail {
+      color: #b00020;
+    }
+
+    .status-partial {
+      color: #b86e00;
+    }
+
+    .status-unknown {
+      color: #666;
+    }
+
+    .output {
+      font-size: 0.85rem;
+      color: #555;
+      word-break: break-word;
+    }
+
+    #video-preview {
+      max-width: 320px;
+      border-radius: 6px;
+      display: none;
+      margin-top: 0.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .media-area {
+      margin: 0.5rem 0;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="titlebar">
+  <div class="titlebar">
     <h1>Gesture-Gated Browser API Test Suite</h1>
     <a href="index.html">← Back to Landing Page</a>
-</div>
+  </div>
 
-<p class="note">
-  Every probe below must be triggered by an explicit <strong>button click</strong>. Browsers block permission prompts, device pickers, and media access when they are called without a live user gesture. A <em>Pass</em> means the API was reachable and the gesture-gated call resolved or rejected in a way that proves the gate exists (for example, a permission prompt appeared and was denied by you). A <em>Partial</em> means the API exists but the call could not complete (usually permission denied or no device available). A <em>Fail</em> means the API is absent in this browser.
-</p>
+  <p class="note">
+    Every probe below must be triggered by an explicit <strong>button click</strong>. Browsers block permission prompts,
+    device pickers, and media access when they are called without a live user gesture. A <em>Pass</em> means the API was
+    reachable and the gesture-gated call resolved or rejected in a way that proves the gate exists (for example, a
+    permission prompt appeared and was denied by you). A <em>Partial</em> means the API exists but the call could not
+    complete (usually permission denied or no device available). A <em>Fail</em> means the API is absent in this
+    browser.
+  </p>
 
-<div id="global-log" class="output" style="margin-bottom:1rem;"></div>
+  <div id="global-log" class="output" style="margin-bottom:1rem;"></div>
 
-<!-- ==================== MEDIA CAPTURE ==================== -->
-<h2>Media Capture</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>getUserMedia (camera + mic)</strong></td>
-      <td>Prompts for camera &amp; microphone, attaches the live stream to a preview video.</td>
-      <td id="status-gum" class="status status-unknown">Idle</td>
-      <td><button id="btn-gum">Request</button><div id="out-gum" class="output"></div><div class="media-area"><video id="video-preview" autoplay playsinline muted></video></div></td>
-    </tr>
-    <tr>
-      <td><strong>getDisplayMedia (screen capture)</strong></td>
-      <td>Prompts you to choose a screen, window, or tab, then reports the captured track label.</td>
-      <td id="status-gdm" class="status status-unknown">Idle</td>
-      <td><button id="btn-gdm">Share screen</button><div id="out-gdm" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>MediaRecorder</strong></td>
-      <td>Starts mic recording after permission; stops after 1.5s and reports the captured blob size.</td>
-      <td id="status-mr" class="status status-unknown">Idle</td>
-      <td><button id="btn-mr">Record 1.5s</button><div id="out-mr" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>SpeechRecognition</strong></td>
-      <td>Starts one-shot speech recognition; speaks a short phrase or grants mic permission to proceed.</td>
-      <td id="status-sr" class="status status-unknown">Idle</td>
-      <td><button id="btn-sr">Start listening</button><div id="out-sr" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>HTMLMediaElement.play()</strong></td>
-      <td>Creates a silent oscillator audio element and calls <code>play()</code> from the click; reports whether the promise resolved or was blocked by autoplay policy.</td>
-      <td id="status-play" class="status status-unknown">Idle</td>
-      <td><button id="btn-play">Test play()</button><div id="out-play" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== MEDIA CAPTURE ==================== -->
+  <h2>Media Capture</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>getUserMedia (camera + mic)</strong></td>
+        <td>Prompts for camera &amp; microphone, attaches the live stream to a preview video.</td>
+        <td id="status-gum" class="status status-unknown">Idle</td>
+        <td><button id="btn-gum">Request</button>
+          <div id="out-gum" class="output"></div>
+          <div class="media-area"><video id="video-preview" autoplay playsinline muted></video></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>getDisplayMedia (screen capture)</strong></td>
+        <td>Prompts you to choose a screen, window, or tab, then reports the captured track label.</td>
+        <td id="status-gdm" class="status status-unknown">Idle</td>
+        <td><button id="btn-gdm">Share screen</button>
+          <div id="out-gdm" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>MediaRecorder</strong></td>
+        <td>Starts mic recording after permission; stops after 1.5s and reports the captured blob size.</td>
+        <td id="status-mr" class="status status-unknown">Idle</td>
+        <td><button id="btn-mr">Record 1.5s</button>
+          <div id="out-mr" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>SpeechRecognition</strong></td>
+        <td>Starts one-shot speech recognition; speaks a short phrase or grants mic permission to proceed.</td>
+        <td id="status-sr" class="status status-unknown">Idle</td>
+        <td><button id="btn-sr">Start listening</button>
+          <div id="out-sr" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>HTMLMediaElement.play()</strong></td>
+        <td>Creates a silent oscillator audio element and calls <code>play()</code> from the click; reports whether the
+          promise resolved or was blocked by autoplay policy.</td>
+        <td id="status-play" class="status status-unknown">Idle</td>
+        <td><button id="btn-play">Test play()</button>
+          <div id="out-play" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- ==================== FILE ACCESS ==================== -->
-<h2>File Access</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>showOpenFilePicker</strong></td>
-      <td>Opens the native file chooser; reports the name and size of the first selected file.</td>
-      <td id="status-open" class="status status-unknown">Idle</td>
-      <td><button id="btn-open">Pick file</button><div id="out-open" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>showDirectoryPicker</strong></td>
-      <td>Opens the directory picker; reports the number of immediate entries in the chosen folder.</td>
-      <td id="status-dir" class="status status-unknown">Idle</td>
-      <td><button id="btn-dir">Pick folder</button><div id="out-dir" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>showSaveFilePicker</strong></td>
-      <td>Opens the save dialog; writes a small text file to the chosen handle.</td>
-      <td id="status-save" class="status status-unknown">Idle</td>
-      <td><button id="btn-save">Save file</button><div id="out-save" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== FILE ACCESS ==================== -->
+  <h2>File Access</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>showOpenFilePicker</strong></td>
+        <td>Opens the native file chooser; reports the name and size of the first selected file.</td>
+        <td id="status-open" class="status status-unknown">Idle</td>
+        <td><button id="btn-open">Pick file</button>
+          <div id="out-open" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>showDirectoryPicker</strong></td>
+        <td>Opens the directory picker; reports the number of immediate entries in the chosen folder.</td>
+        <td id="status-dir" class="status status-unknown">Idle</td>
+        <td><button id="btn-dir">Pick folder</button>
+          <div id="out-dir" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>showSaveFilePicker</strong></td>
+        <td>Opens the save dialog; writes a small text file to the chosen handle.</td>
+        <td id="status-save" class="status status-unknown">Idle</td>
+        <td><button id="btn-save">Save file</button>
+          <div id="out-save" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- ==================== CLIPBOARD & SHARE ==================== -->
-<h2>Clipboard &amp; Share</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>Clipboard.writeText</strong></td>
-      <td>Writes a timestamped string to the clipboard.</td>
-      <td id="status-clip-w" class="status status-unknown">Idle</td>
-      <td><button id="btn-clip-w">Copy text</button><div id="out-clip-w" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Clipboard.readText</strong></td>
-      <td>Reads whatever text is currently in the clipboard (may prompt for read permission).</td>
-      <td id="status-clip-r" class="status status-unknown">Idle</td>
-      <td><button id="btn-clip-r">Paste text</button><div id="out-clip-r" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Web Share (navigator.share)</strong></td>
-      <td>Opens the native OS share sheet with a test URL and title.</td>
-      <td id="status-share" class="status status-unknown">Idle</td>
-      <td><button id="btn-share">Share</button><div id="out-share" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== CLIPBOARD & SHARE ==================== -->
+  <h2>Clipboard &amp; Share</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Clipboard.writeText</strong></td>
+        <td>Writes a timestamped string to the clipboard.</td>
+        <td id="status-clip-w" class="status status-unknown">Idle</td>
+        <td><button id="btn-clip-w">Copy text</button>
+          <div id="out-clip-w" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Clipboard.readText</strong></td>
+        <td>Reads whatever text is currently in the clipboard (may prompt for read permission).</td>
+        <td id="status-clip-r" class="status status-unknown">Idle</td>
+        <td><button id="btn-clip-r">Paste text</button>
+          <div id="out-clip-r" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Web Share (navigator.share)</strong></td>
+        <td>Opens the native OS share sheet with a test URL and title.</td>
+        <td id="status-share" class="status status-unknown">Idle</td>
+        <td><button id="btn-share">Share</button>
+          <div id="out-share" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- ==================== LOCATION & SENSORS ==================== -->
-<h2>Location &amp; Sensors</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>Geolocation.getCurrentPosition</strong></td>
-      <td>Requests a one-shot location fix and reports latitude/longitude accuracy.</td>
-      <td id="status-geo" class="status status-unknown">Idle</td>
-      <td><button id="btn-geo">Get location</button><div id="out-geo" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>DeviceOrientationEvent.requestPermission</strong></td>
-      <td>On iOS 13+ this must be called from a click; elsewhere it resolves immediately. Reports the permission state.</td>
-      <td id="status-ori" class="status status-unknown">Idle</td>
-      <td><button id="btn-ori">Request orientation</button><div id="out-ori" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>DeviceMotionEvent.requestPermission</strong></td>
-      <td>Same iOS gesture gate as orientation; reports the resulting permission state.</td>
-      <td id="status-mot" class="status status-unknown">Idle</td>
-      <td><button id="btn-mot">Request motion</button><div id="out-mot" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== LOCATION & SENSORS ==================== -->
+  <h2>Location &amp; Sensors</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Geolocation.getCurrentPosition</strong></td>
+        <td>Requests a one-shot location fix and reports latitude/longitude accuracy.</td>
+        <td id="status-geo" class="status status-unknown">Idle</td>
+        <td><button id="btn-geo">Get location</button>
+          <div id="out-geo" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>DeviceOrientationEvent.requestPermission</strong></td>
+        <td>On iOS 13+ this must be called from a click; elsewhere it resolves immediately. Reports the permission
+          state.</td>
+        <td id="status-ori" class="status status-unknown">Idle</td>
+        <td><button id="btn-ori">Request orientation</button>
+          <div id="out-ori" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>DeviceMotionEvent.requestPermission</strong></td>
+        <td>Same iOS gesture gate as orientation; reports the resulting permission state.</td>
+        <td id="status-mot" class="status status-unknown">Idle</td>
+        <td><button id="btn-mot">Request motion</button>
+          <div id="out-mot" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- ==================== HARDWARE PICKERS ==================== -->
-<h2>Hardware Pickers</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>Web Bluetooth requestDevice</strong></td>
-      <td>Opens the Bluetooth device chooser (filters to generic access service); reports the chosen device name or cancellation.</td>
-      <td id="status-bt" class="status status-unknown">Idle</td>
-      <td><button id="btn-bt">Scan Bluetooth</button><div id="out-bt" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>WebUSB requestDevice</strong></td>
-      <td>Opens the USB device chooser; reports the selected device’s vendor and product IDs.</td>
-      <td id="status-usb" class="status status-unknown">Idle</td>
-      <td><button id="btn-usb">Scan USB</button><div id="out-usb" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Web Serial requestPort</strong></td>
-      <td>Opens the serial port chooser; reports whether a port was granted.</td>
-      <td id="status-serial" class="status status-unknown">Idle</td>
-      <td><button id="btn-serial">Scan Serial</button><div id="out-serial" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Contact Picker select</strong></td>
-      <td>Opens the native contact picker; reports how many contacts were selected.</td>
-      <td id="status-contacts" class="status status-unknown">Idle</td>
-      <td><button id="btn-contacts">Pick contacts</button><div id="out-contacts" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== HARDWARE PICKERS ==================== -->
+  <h2>Hardware Pickers</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Web Bluetooth requestDevice</strong></td>
+        <td>Opens the Bluetooth device chooser (filters to generic access service); reports the chosen device name or
+          cancellation.</td>
+        <td id="status-bt" class="status status-unknown">Idle</td>
+        <td><button id="btn-bt">Scan Bluetooth</button>
+          <div id="out-bt" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>WebUSB requestDevice</strong></td>
+        <td>Opens the USB device chooser; reports the selected device’s vendor and product IDs.</td>
+        <td id="status-usb" class="status status-unknown">Idle</td>
+        <td><button id="btn-usb">Scan USB</button>
+          <div id="out-usb" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Web Serial requestPort</strong></td>
+        <td>Opens the serial port chooser; reports whether a port was granted.</td>
+        <td id="status-serial" class="status status-unknown">Idle</td>
+        <td><button id="btn-serial">Scan Serial</button>
+          <div id="out-serial" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Contact Picker select</strong></td>
+        <td>Opens the native contact picker; reports how many contacts were selected.</td>
+        <td id="status-contacts" class="status status-unknown">Idle</td>
+        <td><button id="btn-contacts">Pick contacts</button>
+          <div id="out-contacts" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- ==================== NOTIFICATIONS, WAKE LOCK, IDLE, EYEDROPPER, PAYMENT, GAMEPAD ==================== -->
-<h2>Notifications, Power &amp; Special Pickers</h2>
-<table>
-  <thead><tr><th style="width:28%">API</th><th style="width:42%">What the click does</th><th>Status</th><th>Output</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><strong>Notification.requestPermission</strong></td>
-      <td>Prompts for notification permission, then immediately shows a confirmation notification if granted.</td>
-      <td id="status-notif" class="status status-unknown">Idle</td>
-      <td><button id="btn-notif">Allow notifications</button><div id="out-notif" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Screen Wake Lock request</strong></td>
-      <td>Requests a screen wake lock, reports whether it was granted, then releases it.</td>
-      <td id="status-wake" class="status status-unknown">Idle</td>
-      <td><button id="btn-wake">Keep screen on</button><div id="out-wake" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>IdleDetector.requestPermission</strong></td>
-      <td>Requests idle-detection permission (Chrome gesture gate); reports the permission state.</td>
-      <td id="status-idle" class="status status-unknown">Idle</td>
-      <td><button id="btn-idle">Request idle perm</button><div id="out-idle" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>EyeDropper.open</strong></td>
-      <td>Launches the screen eyedropper; reports the picked color as an sRGB hex string.</td>
-      <td id="status-eye" class="status status-unknown">Idle</td>
-      <td><button id="btn-eye">Pick color</button><div id="out-eye" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>PaymentRequest.show</strong></td>
-      <td>Opens a minimal payment sheet (Google Pay / basic card) and reports the selected method or cancellation.</td>
-      <td id="status-pay" class="status status-unknown">Idle</td>
-      <td><button id="btn-pay">Request payment</button><div id="out-pay" class="output"></div></td>
-    </tr>
-    <tr>
-      <td><strong>Gamepad API connection</strong></td>
-      <td>Starts listening for <code>gamepadconnected</code>; then asks you to press any button on a connected controller.</td>
-      <td id="status-gp" class="status status-unknown">Idle</td>
-      <td><button id="btn-gp">Listen for gamepad</button><div id="out-gp" class="output"></div></td>
-    </tr>
-  </tbody>
-</table>
+  <!-- ==================== NOTIFICATIONS, WAKE LOCK, IDLE, EYEDROPPER, PAYMENT, GAMEPAD ==================== -->
+  <h2>Notifications, Power &amp; Special Pickers</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">API</th>
+        <th style="width:42%">What the click does</th>
+        <th>Status</th>
+        <th>Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Notification.requestPermission</strong></td>
+        <td>Prompts for notification permission, then immediately shows a confirmation notification if granted.</td>
+        <td id="status-notif" class="status status-unknown">Idle</td>
+        <td><button id="btn-notif">Allow notifications</button>
+          <div id="out-notif" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Screen Wake Lock request</strong></td>
+        <td>Requests a screen wake lock, reports whether it was granted, then releases it.</td>
+        <td id="status-wake" class="status status-unknown">Idle</td>
+        <td><button id="btn-wake">Keep screen on</button>
+          <div id="out-wake" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>IdleDetector.requestPermission</strong></td>
+        <td>Requests idle-detection permission (Chrome gesture gate); reports the permission state.</td>
+        <td id="status-idle" class="status status-unknown">Idle</td>
+        <td><button id="btn-idle">Request idle perm</button>
+          <div id="out-idle" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>EyeDropper.open</strong></td>
+        <td>Launches the screen eyedropper; reports the picked color as an sRGB hex string.</td>
+        <td id="status-eye" class="status status-unknown">Idle</td>
+        <td><button id="btn-eye">Pick color</button>
+          <div id="out-eye" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>PaymentRequest.show</strong></td>
+        <td>Opens a minimal payment sheet (Google Pay / basic card) and reports the selected method or cancellation.
+        </td>
+        <td id="status-pay" class="status status-unknown">Idle</td>
+        <td><button id="btn-pay">Request payment</button>
+          <div id="out-pay" class="output"></div>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Gamepad API connection</strong></td>
+        <td>Starts listening for <code>gamepadconnected</code>; then asks you to press any button on a connected
+          controller.</td>
+        <td id="status-gp" class="status status-unknown">Idle</td>
+        <td><button id="btn-gp">Listen for gamepad</button>
+          <div id="out-gp" class="output"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<script>
-(function () {
-  'use strict';
+  <script>
+    (function () {
+      'use strict';
 
-  // ---------------------------------------------------------------------------
-  // Shared utilities
-  // ---------------------------------------------------------------------------
-  const $ = (id) => document.getElementById(id);
-  const logEl = $('global-log');
+      // ---------------------------------------------------------------------------
+      // Shared utilities
+      // ---------------------------------------------------------------------------
+      function $(id) { return document.getElementById(id); }
+      const logEl = $('global-log');
 
-  function setStatus(statusId, cls, text) {
-    const el = $(statusId);
-    el.className = 'status ' + cls;
-    el.textContent = text;
-  }
-
-  function setOutput(outId, text) {
-    $(outId).textContent = text;
-  }
-
-  function friendlyError(err) {
-    if (!err) return 'Unknown error';
-    if (typeof err === 'string') return err;
-    return err.name + ': ' + (err.message || String(err));
-  }
-
-  function describeErrorForUser(err) {
-    if (err.name === 'NotAllowedError') return 'Permission denied or gesture expired.';
-    if (err.name === 'AbortError') return 'User cancelled.';
-    if (err.name === 'NotFoundError') return 'No matching device or file found.';
-    if (err.name === 'SecurityError') return 'Security context missing (HTTPS/localhost required).';
-    return friendlyError(err);
-  }
-
-  // ---------------------------------------------------------------------------
-  // MEDIA CAPTURE
-  // ---------------------------------------------------------------------------
-
-  // getUserMedia
-  $('btn-gum').addEventListener('click', async () => {
-    const btn = $('btn-gum');
-    btn.disabled = true;
-    setStatus('status-gum', 'status-unknown', 'Requesting…');
-    setOutput('out-gum', '');
-    $('video-preview').style.display = 'none';
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setStatus('status-gum', 'status-fail', 'Fail');
-        setOutput('out-gum', 'navigator.mediaDevices.getUserMedia is not available.');
-        return;
+      function setStatus(statusId, cls, text) {
+        const el = $(statusId);
+        if (el) { el.className = 'status ' + cls; el.textContent = text; }
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      const video = $('video-preview');
-      video.srcObject = stream;
-      video.style.display = 'block';
-      const videoTrack = stream.getVideoTracks()[0];
-      const audioTrack = stream.getAudioTracks()[0];
-      setStatus('status-gum', 'status-pass', 'Pass');
-      setOutput('out-gum',
-        'Granted. Video: ' + (videoTrack ? videoTrack.label : 'none') +
-        ' | Audio: ' + (audioTrack ? audioTrack.label : 'none'));
-      // Stop tracks after 5 seconds so the camera light goes off
-      setTimeout(() => stream.getTracks().forEach(t => t.stop()), 5000);
-    } catch (err) {
-      setStatus('status-gum', 'status-partial', 'Partial');
-      setOutput('out-gum', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
-  // getDisplayMedia
-  $('btn-gdm').addEventListener('click', async () => {
-    const btn = $('btn-gdm');
-    btn.disabled = true;
-    setStatus('status-gdm', 'status-unknown', 'Prompting…');
-    setOutput('out-gdm', '');
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        setStatus('status-gdm', 'status-fail', 'Fail');
-        setOutput('out-gdm', 'getDisplayMedia is not available.');
-        return;
+      function setOutput(outId, text) {
+        const el = $(outId);
+        if (el) el.textContent = text;
       }
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const track = stream.getVideoTracks()[0];
-      setStatus('status-gdm', 'status-pass', 'Pass');
-      setOutput('out-gdm', 'Capturing: ' + (track ? track.label : 'unknown surface') +
-        '. Stream will stop in 3s.');
-      setTimeout(() => stream.getTracks().forEach(t => t.stop()), 3000);
-    } catch (err) {
-      setStatus('status-gdm', 'status-partial', 'Partial');
-      setOutput('out-gdm', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
-  // MediaRecorder
-  $('btn-mr').addEventListener('click', async () => {
-    const btn = $('btn-mr');
-    btn.disabled = true;
-    setStatus('status-mr', 'status-unknown', 'Recording…');
-    setOutput('out-mr', '');
-    try {
-      if (typeof MediaRecorder === 'undefined') {
-        setStatus('status-mr', 'status-fail', 'Fail');
-        setOutput('out-mr', 'MediaRecorder is not available.');
-        return;
+      function friendlyError(err) {
+        if (!err) return 'Unknown error';
+        if (typeof err === 'string') return err;
+        return err.name + ': ' + (err.message || String(err));
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks = [];
-      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-      const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
-      recorder.start();
-      await new Promise(r => setTimeout(r, 1500));
-      recorder.stop();
-      stream.getTracks().forEach(t => t.stop());
-      await stopped;
-      const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-      setStatus('status-mr', 'status-pass', 'Pass');
-      setOutput('out-mr', 'Recorded blob: ' + blob.size + ' bytes (' + (recorder.mimeType || 'unknown type') + ')');
-    } catch (err) {
-      setStatus('status-mr', 'status-partial', 'Partial');
-      setOutput('out-mr', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
-  // SpeechRecognition
-  $('btn-sr').addEventListener('click', () => {
-    const btn = $('btn-sr');
-    btn.disabled = true;
-    setStatus('status-sr', 'status-unknown', 'Listening…');
-    setOutput('out-sr', '');
-    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      setStatus('status-sr', 'status-fail', 'Fail');
-      setOutput('out-sr', 'SpeechRecognition / webkitSpeechRecognition is not available.');
-      btn.disabled = false;
-      return;
-    }
-    let recognition;
-    try {
-      recognition = new SpeechRecognitionCtor();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.continuous = false;
-      let settled = false;
-      const finish = (statusClass, label, message) => {
-        if (settled) return;
-        settled = true;
-        setStatus('status-sr', statusClass, label);
-        setOutput('out-sr', message);
-        btn.disabled = false;
-      };
-      recognition.onresult = (event) => {
-        const text = event.results[0][0].transcript;
-        finish('status-pass', 'Pass', 'Recognized: “' + text + '”');
-      };
-      recognition.onerror = (event) => {
-        finish('status-partial', 'Partial', 'Recognition error: ' + event.error);
-      };
-      recognition.onend = () => {
-        // If no result/error fired, the mic permission may still have been granted.
-        finish('status-partial', 'Partial',
-          'Recognition ended without a final result. Microphone permission may have been granted.');
-      };
-      recognition.start();
-      setOutput('out-sr', 'Speak a short phrase now…');
-      // Safety timeout
-      setTimeout(() => {
-        if (!settled) {
-          try { recognition.stop(); } catch (_) {}
-          finish('status-partial', 'Partial', 'Timed out after 6s. Mic permission may have been granted but no speech detected.');
+      function describeErrorForUser(err) {
+        if (err.name === 'NotAllowedError') return 'Permission denied or gesture expired.';
+        if (err.name === 'AbortError') return 'User cancelled.';
+        if (err.name === 'NotFoundError') return 'No matching device or file found.';
+        if (err.name === 'SecurityError') return 'Security context missing (HTTPS/localhost required).';
+        return friendlyError(err);
+      }
+
+      // ---------------------------------------------------------------------------
+      // Button binding helper - works even if onclick is blocked
+      // ---------------------------------------------------------------------------
+      function bindClick(id, handler) {
+        const btn = $(id);
+        if (!btn) return;
+        // Use addEventListener (preferred)
+        btn.addEventListener('click', handler);
+        // Fallback: also set onclick property
+        btn.onclick = handler;
+        // Fallback: set inline onclick attribute
+        btn.setAttribute('onclick', '(' + handler.toString() + ')()');
+      }
+
+      // ---------------------------------------------------------------------------
+      // MEDIA CAPTURE
+      // ---------------------------------------------------------------------------
+
+      // getUserMedia
+      bindClick('btn-gum', async () => {
+        const btn = $('btn-gum');
+        btn.disabled = true;
+        setStatus('status-gum', 'status-unknown', 'Requesting…');
+        setOutput('out-gum', '');
+        $('video-preview').style.display = 'none';
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setStatus('status-gum', 'status-fail', 'Fail');
+            setOutput('out-gum', 'navigator.mediaDevices.getUserMedia is not available.');
+            return;
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          const video = $('video-preview');
+          video.srcObject = stream;
+          video.style.display = 'block';
+          const videoTrack = stream.getVideoTracks()[0];
+          const audioTrack = stream.getAudioTracks()[0];
+          setStatus('status-gum', 'status-pass', 'Pass');
+          setOutput('out-gum',
+            'Granted. Video: ' + (videoTrack ? videoTrack.label : 'none') +
+            ' | Audio: ' + (audioTrack ? audioTrack.label : 'none'));
+          // Stop tracks after 5 seconds so the camera light goes off
+          setTimeout(() => stream.getTracks().forEach(t => t.stop()), 5000);
+        } catch (err) {
+          setStatus('status-gum', 'status-partial', 'Partial');
+          setOutput('out-gum', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
         }
-      }, 6000);
-    } catch (err) {
-      setStatus('status-sr', 'status-partial', 'Partial');
-      setOutput('out-sr', friendlyError(err));
-      btn.disabled = false;
-    }
-  });
-
-  // HTMLMediaElement.play() – autoplay policy probe
-  $('btn-play').addEventListener('click', async () => {
-    const btn = $('btn-play');
-    btn.disabled = true;
-    setStatus('status-play', 'status-unknown', 'Testing…');
-    setOutput('out-play', '');
-    // Create a tiny silent audio context oscillator so no external file is needed.
-    let ctx;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) {
-        setStatus('status-play', 'status-fail', 'Fail');
-        setOutput('out-play', 'AudioContext unavailable; cannot construct a test media element.');
-        return;
-      }
-      ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const dest = ctx.createMediaStreamDestination();
-      osc.connect(dest);
-      osc.start();
-      const audio = document.createElement('audio');
-      audio.srcObject = dest.stream;
-      audio.muted = true; // muted avoids actual sound; play() still exercises the policy
-      // play() is called synchronously inside the click handler
-      const playPromise = audio.play();
-      if (playPromise && typeof playPromise.then === 'function') {
-        await playPromise;
-        setStatus('status-play', 'status-pass', 'Pass');
-        setOutput('out-play', 'HTMLMediaElement.play() resolved inside the click handler. Autoplay policy allowed it.');
-      } else {
-        setStatus('status-play', 'status-pass', 'Pass');
-        setOutput('out-play', 'play() returned a non-Promise; no autoplay rejection observed.');
-      }
-      osc.stop();
-      ctx.close();
-    } catch (err) {
-      setStatus('status-play', 'status-partial', 'Partial');
-      setOutput('out-play', 'play() was blocked or failed: ' + describeErrorForUser(err));
-      if (ctx) try { ctx.close(); } catch (_) {}
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // FILE ACCESS
-  // ---------------------------------------------------------------------------
-
-  $('btn-open').addEventListener('click', async () => {
-    const btn = $('btn-open');
-    btn.disabled = true;
-    setStatus('status-open', 'status-unknown', 'Opening…');
-    setOutput('out-open', '');
-    try {
-      if (typeof window.showOpenFilePicker !== 'function') {
-        setStatus('status-open', 'status-fail', 'Fail');
-        setOutput('out-open', 'showOpenFilePicker is not available (requires Chromium-based browser and a secure context).');
-        return;
-      }
-      const [handle] = await window.showOpenFilePicker({ multiple: false });
-      const file = await handle.getFile();
-      setStatus('status-open', 'status-pass', 'Pass');
-      setOutput('out-open', 'Selected: ' + file.name + ' (' + file.size + ' bytes)');
-    } catch (err) {
-      setStatus('status-open', 'status-partial', 'Partial');
-      setOutput('out-open', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $('btn-dir').addEventListener('click', async () => {
-    const btn = $('btn-dir');
-    btn.disabled = true;
-    setStatus('status-dir', 'status-unknown', 'Opening…');
-    setOutput('out-dir', '');
-    try {
-      if (typeof window.showDirectoryPicker !== 'function') {
-        setStatus('status-dir', 'status-fail', 'Fail');
-        setOutput('out-dir', 'showDirectoryPicker is not available.');
-        return;
-      }
-      const dirHandle = await window.showDirectoryPicker();
-      let count = 0;
-      for await (const _ of dirHandle.values()) count++;
-      setStatus('status-dir', 'status-pass', 'Pass');
-      setOutput('out-dir', 'Directory “' + dirHandle.name + '” contains ' + count + ' immediate entr' + (count === 1 ? 'y' : 'ies') + '.');
-    } catch (err) {
-      setStatus('status-dir', 'status-partial', 'Partial');
-      setOutput('out-dir', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $('btn-save').addEventListener('click', async () => {
-    const btn = $('btn-save');
-    btn.disabled = true;
-    setStatus('status-save', 'status-unknown', 'Opening…');
-    setOutput('out-save', '');
-    try {
-      if (typeof window.showSaveFilePicker !== 'function') {
-        setStatus('status-save', 'status-fail', 'Fail');
-        setOutput('out-save', 'showSaveFilePicker is not available.');
-        return;
-      }
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'api-test.txt',
-        types: [{ description: 'Text file', accept: { 'text/plain': ['.txt'] } }]
       });
-      const writable = await handle.createWritable();
-      await writable.write('Written by the gesture-gated API test suite at ' + new Date().toISOString());
-      await writable.close();
-      setStatus('status-save', 'status-pass', 'Pass');
-      setOutput('out-save', 'Wrote test content to “' + handle.name + '”.');
-    } catch (err) {
-      setStatus('status-save', 'status-partial', 'Partial');
-      setOutput('out-save', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
-  // ---------------------------------------------------------------------------
-  // CLIPBOARD & SHARE
-  // ---------------------------------------------------------------------------
-
-  $('btn-clip-w').addEventListener('click', async () => {
-    const btn = $('btn-clip-w');
-    btn.disabled = true;
-    setStatus('status-clip-w', 'status-unknown', 'Writing…');
-    setOutput('out-clip-w', '');
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.writeText) {
-        setStatus('status-clip-w', 'status-fail', 'Fail');
-        setOutput('out-clip-w', 'navigator.clipboard.writeText is not available.');
-        return;
-      }
-      const text = 'Clipboard test — ' + new Date().toISOString();
-      await navigator.clipboard.writeText(text);
-      setStatus('status-clip-w', 'status-pass', 'Pass');
-      setOutput('out-clip-w', 'Wrote to clipboard: “' + text + '”');
-    } catch (err) {
-      setStatus('status-clip-w', 'status-partial', 'Partial');
-      setOutput('out-clip-w', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $('btn-clip-r').addEventListener('click', async () => {
-    const btn = $('btn-clip-r');
-    btn.disabled = true;
-    setStatus('status-clip-r', 'status-unknown', 'Reading…');
-    setOutput('out-clip-r', '');
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.readText) {
-        setStatus('status-clip-r', 'status-fail', 'Fail');
-        setOutput('out-clip-r', 'navigator.clipboard.readText is not available.');
-        return;
-      }
-      const text = await navigator.clipboard.readText();
-      setStatus('status-clip-r', 'status-pass', 'Pass');
-      setOutput('out-clip-r', text ? 'Clipboard text: “' + text + '”' : 'Clipboard is empty.');
-    } catch (err) {
-      setStatus('status-clip-r', 'status-partial', 'Partial');
-      setOutput('out-clip-r', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $('btn-share').addEventListener('click', async () => {
-    const btn = $('btn-share');
-    btn.disabled = true;
-    setStatus('status-share', 'status-unknown', 'Sharing…');
-    setOutput('out-share', '');
-    try {
-      if (typeof navigator.share !== 'function') {
-        setStatus('status-share', 'status-fail', 'Fail');
-        setOutput('out-share', 'navigator.share is not available.');
-        return;
-      }
-      const data = {
-        title: 'Gesture-Gated API Test',
-        text: 'Testing the Web Share API from a click handler.',
-        url: location.href
-      };
-      if (navigator.canShare && !navigator.canShare(data)) {
-        setStatus('status-share', 'status-fail', 'Fail');
-        setOutput('out-share', 'navigator.canShare() returned false for this payload.');
-        return;
-      }
-      await navigator.share(data);
-      setStatus('status-share', 'status-pass', 'Pass');
-      setOutput('out-share', 'Share sheet resolved (the user completed or dismissed it).');
-    } catch (err) {
-      setStatus('status-share', 'status-partial', 'Partial');
-      setOutput('out-share', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // LOCATION & SENSORS
-  // ---------------------------------------------------------------------------
-
-  $('btn-geo').addEventListener('click', () => {
-    const btn = $('btn-geo');
-    btn.disabled = true;
-    setStatus('status-geo', 'status-unknown', 'Locating…');
-    setOutput('out-geo', '');
-    if (!('geolocation' in navigator)) {
-      setStatus('status-geo', 'status-fail', 'Fail');
-      setOutput('out-geo', 'navigator.geolocation is not available.');
-      btn.disabled = false;
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setStatus('status-geo', 'status-pass', 'Pass');
-        setOutput('out-geo',
-          'Latitude: ' + pos.coords.latitude.toFixed(5) +
-          ', Longitude: ' + pos.coords.longitude.toFixed(5) +
-          ', Accuracy: ' + Math.round(pos.coords.accuracy) + ' m');
-        btn.disabled = false;
-      },
-      (err) => {
-        setStatus('status-geo', 'status-partial', 'Partial');
-        setOutput('out-geo', 'Geolocation error (' + err.code + '): ' + err.message);
-        btn.disabled = false;
-      },
-      { timeout: 10000, maximumAge: 0, enableHighAccuracy: false }
-    );
-  });
-
-  // DeviceOrientationEvent.requestPermission (iOS gate)
-  $('btn-ori').addEventListener('click', async () => {
-    const btn = $('btn-ori');
-    btn.disabled = true;
-    setStatus('status-ori', 'status-unknown', 'Requesting…');
-    setOutput('out-ori', '');
-    try {
-      if (typeof DeviceOrientationEvent === 'undefined') {
-        setStatus('status-ori', 'status-fail', 'Fail');
-        setOutput('out-ori', 'DeviceOrientationEvent is not defined.');
-        return;
-      }
-      if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
-        // Non-iOS platforms have no gate; the API is simply present.
-        setStatus('status-ori', 'status-pass', 'Pass');
-        setOutput('out-ori', 'No requestPermission gate on this platform (iOS-only gate). API is present.');
-        return;
-      }
-      const state = await DeviceOrientationEvent.requestPermission();
-      setStatus('status-ori', state === 'granted' ? 'status-pass' : 'status-partial',
-        state === 'granted' ? 'Pass' : 'Partial');
-      setOutput('out-ori', 'DeviceOrientation permission: ' + state);
-    } catch (err) {
-      setStatus('status-ori', 'status-partial', 'Partial');
-      setOutput('out-ori', friendlyError(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // DeviceMotionEvent.requestPermission (iOS gate)
-  $('btn-mot').addEventListener('click', async () => {
-    const btn = $('btn-mot');
-    btn.disabled = true;
-    setStatus('status-mot', 'status-unknown', 'Requesting…');
-    setOutput('out-mot', '');
-    try {
-      if (typeof DeviceMotionEvent === 'undefined') {
-        setStatus('status-mot', 'status-fail', 'Fail');
-        setOutput('out-mot', 'DeviceMotionEvent is not defined.');
-        return;
-      }
-      if (typeof DeviceMotionEvent.requestPermission !== 'function') {
-        setStatus('status-mot', 'status-pass', 'Pass');
-        setOutput('out-mot', 'No requestPermission gate on this platform (iOS-only gate). API is present.');
-        return;
-      }
-      const state = await DeviceMotionEvent.requestPermission();
-      setStatus('status-mot', state === 'granted' ? 'status-pass' : 'status-partial',
-        state === 'granted' ? 'Pass' : 'Partial');
-      setOutput('out-mot', 'DeviceMotion permission: ' + state);
-    } catch (err) {
-      setStatus('status-mot', 'status-partial', 'Partial');
-      setOutput('out-mot', friendlyError(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // HARDWARE PICKERS
-  // ---------------------------------------------------------------------------
-
-  $('btn-bt').addEventListener('click', async () => {
-    const btn = $('btn-bt');
-    btn.disabled = true;
-    setStatus('status-bt', 'status-unknown', 'Scanning…');
-    setOutput('out-bt', '');
-    try {
-      if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
-        setStatus('status-bt', 'status-fail', 'Fail');
-        setOutput('out-bt', 'navigator.bluetooth.requestDevice is not available (Chromium + HTTPS required).');
-        return;
-      }
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['generic_access'] }],
-        optionalServices: ['battery_service']
+      // getDisplayMedia
+      bindClick('btn-gdm', async () => {
+        const btn = $('btn-gdm');
+        btn.disabled = true;
+        setStatus('status-gdm', 'status-unknown', 'Prompting…');
+        setOutput('out-gdm', '');
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            setStatus('status-gdm', 'status-fail', 'Fail');
+            setOutput('out-gdm', 'getDisplayMedia is not available.');
+            return;
+          }
+          const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          const track = stream.getVideoTracks()[0];
+          setStatus('status-gdm', 'status-pass', 'Pass');
+          setOutput('out-gdm', 'Capturing: ' + (track ? track.label : 'unknown surface') +
+            '. Stream will stop in 3s.');
+          setTimeout(() => stream.getTracks().forEach(t => t.stop()), 3000);
+        } catch (err) {
+          setStatus('status-gdm', 'status-partial', 'Partial');
+          setOutput('out-gdm', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
       });
-      setStatus('status-bt', 'status-pass', 'Pass');
-      setOutput('out-bt', 'Selected Bluetooth device: ' + (device.name || '(unnamed)') + ' — id: ' + device.id);
-    } catch (err) {
-      setStatus('status-bt', 'status-partial', 'Partial');
-      setOutput('out-bt', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
 
-  $('btn-usb').addEventListener('click', async () => {
-    const btn = $('btn-usb');
-    btn.disabled = true;
-    setStatus('status-usb', 'status-unknown', 'Scanning…');
-    setOutput('out-usb', '');
-    try {
-      if (!navigator.usb || typeof navigator.usb.requestDevice !== 'function') {
-        setStatus('status-usb', 'status-fail', 'Fail');
-        setOutput('out-usb', 'navigator.usb.requestDevice is not available.');
-        return;
-      }
-      // No filters: let the user choose any USB device for testing.
-      const device = await navigator.usb.requestDevice({ filters: [] });
-      setStatus('status-usb', 'status-pass', 'Pass');
-      setOutput('out-usb',
-        'Selected USB device — Vendor: 0x' + device.vendorId.toString(16).padStart(4, '0') +
-        ', Product: 0x' + device.productId.toString(16).padStart(4, '0'));
-    } catch (err) {
-      setStatus('status-usb', 'status-partial', 'Partial');
-      setOutput('out-usb', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      // MediaRecorder
+      bindClick('btn-mr', async () => {
+        const btn = $('btn-mr');
+        btn.disabled = true;
+        setStatus('status-mr', 'status-unknown', 'Recording…');
+        setOutput('out-mr', '');
+        try {
+          if (typeof MediaRecorder === 'undefined') {
+            setStatus('status-mr', 'status-fail', 'Fail');
+            setOutput('out-mr', 'MediaRecorder is not available.');
+            return;
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(stream);
+          const chunks = [];
+          recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+          const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
+          recorder.start();
+          await new Promise(r => setTimeout(r, 1500));
+          recorder.stop();
+          stream.getTracks().forEach(t => t.stop());
+          await stopped;
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          setStatus('status-mr', 'status-pass', 'Pass');
+          setOutput('out-mr', 'Recorded blob: ' + blob.size + ' bytes (' + (recorder.mimeType || 'unknown type') + ')');
+        } catch (err) {
+          setStatus('status-mr', 'status-partial', 'Partial');
+          setOutput('out-mr', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  $('btn-serial').addEventListener('click', async () => {
-    const btn = $('btn-serial');
-    btn.disabled = true;
-    setStatus('status-serial', 'status-unknown', 'Scanning…');
-    setOutput('out-serial', '');
-    try {
-      if (!navigator.serial || typeof navigator.serial.requestPort !== 'function') {
-        setStatus('status-serial', 'status-fail', 'Fail');
-        setOutput('out-serial', 'navigator.serial.requestPort is not available (Chromium + HTTPS required).');
-        return;
-      }
-      const port = await navigator.serial.requestPort();
-      setStatus('status-serial', 'status-pass', 'Pass');
-      const info = port.getInfo ? port.getInfo() : {};
-      setOutput('out-serial',
-        'Serial port granted. USB Vendor: ' + (info.usbVendorId != null ? '0x' + info.usbVendorId.toString(16) : 'unknown') +
-        ', Product: ' + (info.usbProductId != null ? '0x' + info.usbProductId.toString(16) : 'unknown'));
-      // Close the port so it is not left open by the test page
-      await port.close();
-    } catch (err) {
-      setStatus('status-serial', 'status-partial', 'Partial');
-      setOutput('out-serial', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      // SpeechRecognition
+      bindClick('btn-sr', () => {
+        const btn = $('btn-sr');
+        btn.disabled = true;
+        setStatus('status-sr', 'status-unknown', 'Listening…');
+        setOutput('out-sr', '');
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) {
+          setStatus('status-sr', 'status-fail', 'Fail');
+          setOutput('out-sr', 'SpeechRecognition / webkitSpeechRecognition is not available.');
+          btn.disabled = false;
+          return;
+        }
+        let recognition;
+        try {
+          recognition = new SpeechRecognitionCtor();
+          recognition.lang = 'en-US';
+          recognition.interimResults = false;
+          recognition.maxAlternatives = 1;
+          recognition.continuous = false;
+          let settled = false;
+          const finish = (statusClass, label, message) => {
+            if (settled) return;
+            settled = true;
+            setStatus('status-sr', statusClass, label);
+            setOutput('out-sr', message);
+            btn.disabled = false;
+          };
+          recognition.onresult = (event) => {
+            const text = event.results[0][0].transcript;
+            finish('status-pass', 'Pass', 'Recognized: “' + text + '”');
+          };
+          recognition.onerror = (event) => {
+            finish('status-partial', 'Partial', 'Recognition error: ' + event.error);
+          };
+          recognition.onend = () => {
+            // If no result/error fired, the mic permission may still have been granted.
+            finish('status-partial', 'Partial',
+              'Recognition ended without a final result. Microphone permission may have been granted.');
+          };
+          recognition.start();
+          setOutput('out-sr', 'Speak a short phrase now…');
+          // Safety timeout
+          setTimeout(() => {
+            if (!settled) {
+              try { recognition.stop(); } catch (_) { }
+              finish('status-partial', 'Partial', 'Timed out after 6s. Mic permission may have been granted but no speech detected.');
+            }
+          }, 6000);
+        } catch (err) {
+          setStatus('status-sr', 'status-partial', 'Partial');
+          setOutput('out-sr', friendlyError(err));
+          btn.disabled = false;
+        }
+      });
 
-  $('btn-contacts').addEventListener('click', async () => {
-    const btn = $('btn-contacts');
-    btn.disabled = true;
-    setStatus('status-contacts', 'status-unknown', 'Opening…');
-    setOutput('out-contacts', '');
-    try {
-      if (!navigator.contacts || typeof navigator.contacts.select !== 'function') {
-        setStatus('status-contacts', 'status-fail', 'Fail');
-        setOutput('out-contacts', 'navigator.contacts.select is not available (Chromium mobile + HTTPS required).');
-        return;
-      }
-      const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: true });
-      setStatus('status-contacts', 'status-pass', 'Pass');
-      setOutput('out-contacts',
-        contacts.length === 0
-          ? 'Picker opened but no contacts were selected.'
-          : 'Selected ' + contacts.length + ' contact(s). First name: ' + (contacts[0].name ? contacts[0].name.join(' ') : '(no name field granted)'));
-    } catch (err) {
-      setStatus('status-contacts', 'status-partial', 'Partial');
-      setOutput('out-contacts', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      // HTMLMediaElement.play() – autoplay policy probe
+      bindClick('btn-play', async () => {
+        const btn = $('btn-play');
+        btn.disabled = true;
+        setStatus('status-play', 'status-unknown', 'Testing…');
+        setOutput('out-play', '');
+        // Create a tiny silent audio context oscillator so no external file is needed.
+        let ctx;
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) {
+            setStatus('status-play', 'status-fail', 'Fail');
+            setOutput('out-play', 'AudioContext unavailable; cannot construct a test media element.');
+            return;
+          }
+          ctx = new AudioCtx();
+          const osc = ctx.createOscillator();
+          const dest = ctx.createMediaStreamDestination();
+          osc.connect(dest);
+          osc.start();
+          const audio = document.createElement('audio');
+          audio.srcObject = dest.stream;
+          audio.muted = true; // muted avoids actual sound; play() still exercises the policy
+          // play() is called synchronously inside the click handler
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.then === 'function') {
+            await playPromise;
+            setStatus('status-play', 'status-pass', 'Pass');
+            setOutput('out-play', 'HTMLMediaElement.play() resolved inside the click handler. Autoplay policy allowed it.');
+          } else {
+            setStatus('status-play', 'status-pass', 'Pass');
+            setOutput('out-play', 'play() returned a non-Promise; no autoplay rejection observed.');
+          }
+          osc.stop();
+          ctx.close();
+        } catch (err) {
+          setStatus('status-play', 'status-partial', 'Partial');
+          setOutput('out-play', 'play() was blocked or failed: ' + describeErrorForUser(err));
+          if (ctx) try { ctx.close(); } catch (_) { }
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  // ---------------------------------------------------------------------------
-  // NOTIFICATIONS, WAKE LOCK, IDLE, EYEDROPPER, PAYMENT, GAMEPAD
-  // ---------------------------------------------------------------------------
+      // ---------------------------------------------------------------------------
+      // FILE ACCESS
+      // ---------------------------------------------------------------------------
 
-  $('btn-notif').addEventListener('click', async () => {
-    const btn = $('btn-notif');
-    btn.disabled = true;
-    setStatus('status-notif', 'status-unknown', 'Requesting…');
-    setOutput('out-notif', '');
-    try {
-      if (typeof Notification === 'undefined') {
-        setStatus('status-notif', 'status-fail', 'Fail');
-        setOutput('out-notif', 'Notification is not defined.');
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        // Show a notification to prove the permission is functional.
-        new Notification('Gesture-gated test', {
-          body: 'Notifications are working from a click handler.',
-          tag: '__gesture_test__'
-        });
-        setStatus('status-notif', 'status-pass', 'Pass');
-        setOutput('out-notif', 'Permission granted and a test notification was shown.');
-      } else {
-        setStatus('status-notif', 'status-partial', 'Partial');
-        setOutput('out-notif', 'Permission state: ' + permission);
-      }
-    } catch (err) {
-      setStatus('status-notif', 'status-partial', 'Partial');
-      setOutput('out-notif', friendlyError(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      bindClick('btn-open', async () => {
+        const btn = $('btn-open');
+        btn.disabled = true;
+        setStatus('status-open', 'status-unknown', 'Opening…');
+        setOutput('out-open', '');
+        try {
+          if (typeof window.showOpenFilePicker !== 'function') {
+            setStatus('status-open', 'status-fail', 'Fail');
+            setOutput('out-open', 'showOpenFilePicker is not available (requires Chromium-based browser and a secure context).');
+            return;
+          }
+          const [handle] = await window.showOpenFilePicker({ multiple: false });
+          const file = await handle.getFile();
+          setStatus('status-open', 'status-pass', 'Pass');
+          setOutput('out-open', 'Selected: ' + file.name + ' (' + file.size + ' bytes)');
+        } catch (err) {
+          setStatus('status-open', 'status-partial', 'Partial');
+          setOutput('out-open', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  $('btn-wake').addEventListener('click', async () => {
-    const btn = $('btn-wake');
-    btn.disabled = true;
-    setStatus('status-wake', 'status-unknown', 'Requesting…');
-    setOutput('out-wake', '');
-    try {
-      if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') {
-        setStatus('status-wake', 'status-fail', 'Fail');
-        setOutput('out-wake', 'navigator.wakeLock.request is not available.');
-        return;
-      }
-      const sentinel = await navigator.wakeLock.request('screen');
-      setStatus('status-wake', 'status-pass', 'Pass');
-      setOutput('out-wake', 'Wake lock granted (type: ' + sentinel.type + '). Releasing in 2s.');
-      setTimeout(async () => {
-        try { await sentinel.release(); } catch (_) {}
-      }, 2000);
-    } catch (err) {
-      setStatus('status-wake', 'status-partial', 'Partial');
-      setOutput('out-wake', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      bindClick('btn-dir', async () => {
+        const btn = $('btn-dir');
+        btn.disabled = true;
+        setStatus('status-dir', 'status-unknown', 'Opening…');
+        setOutput('out-dir', '');
+        try {
+          if (typeof window.showDirectoryPicker !== 'function') {
+            setStatus('status-dir', 'status-fail', 'Fail');
+            setOutput('out-dir', 'showDirectoryPicker is not available.');
+            return;
+          }
+          const dirHandle = await window.showDirectoryPicker();
+          let count = 0;
+          for await (const _ of dirHandle.values()) count++;
+          setStatus('status-dir', 'status-pass', 'Pass');
+          setOutput('out-dir', 'Directory “' + dirHandle.name + '” contains ' + count + ' immediate entr' + (count === 1 ? 'y' : 'ies') + '.');
+        } catch (err) {
+          setStatus('status-dir', 'status-partial', 'Partial');
+          setOutput('out-dir', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  $('btn-idle').addEventListener('click', async () => {
-    const btn = $('btn-idle');
-    btn.disabled = true;
-    setStatus('status-idle', 'status-unknown', 'Requesting…');
-    setOutput('out-idle', '');
-    try {
-      if (typeof IdleDetector === 'undefined') {
-        setStatus('status-idle', 'status-fail', 'Fail');
-        setOutput('out-idle', 'IdleDetector is not defined (Chrome 94+ behind a flag / HTTPS required).');
-        return;
-      }
-      if (typeof IdleDetector.requestPermission !== 'function') {
-        setStatus('status-idle', 'status-fail', 'Fail');
-        setOutput('out-idle', 'IdleDetector.requestPermission static method is missing.');
-        return;
-      }
-      const state = await IdleDetector.requestPermission();
-      setStatus('status-idle', state === 'granted' ? 'status-pass' : 'status-partial',
-        state === 'granted' ? 'Pass' : 'Partial');
-      setOutput('out-idle', 'Idle-detection permission: ' + state);
-    } catch (err) {
-      setStatus('status-idle', 'status-partial', 'Partial');
-      setOutput('out-idle', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      bindClick('btn-save', async () => {
+        const btn = $('btn-save');
+        btn.disabled = true;
+        setStatus('status-save', 'status-unknown', 'Opening…');
+        setOutput('out-save', '');
+        try {
+          if (typeof window.showSaveFilePicker !== 'function') {
+            setStatus('status-save', 'status-fail', 'Fail');
+            setOutput('out-save', 'showSaveFilePicker is not available.');
+            return;
+          }
+          const handle = await window.showSaveFilePicker({
+            suggestedName: 'api-test.txt',
+            types: [{ description: 'Text file', accept: { 'text/plain': ['.txt'] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write('Written by the gesture-gated API test suite at ' + new Date().toISOString());
+          await writable.close();
+          setStatus('status-save', 'status-pass', 'Pass');
+          setOutput('out-save', 'Wrote test content to “' + handle.name + '”.');
+        } catch (err) {
+          setStatus('status-save', 'status-partial', 'Partial');
+          setOutput('out-save', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  $('btn-eye').addEventListener('click', async () => {
-    const btn = $('btn-eye');
-    btn.disabled = true;
-    setStatus('status-eye', 'status-unknown', 'Opening…');
-    setOutput('out-eye', '');
-    try {
-      if (typeof EyeDropper === 'undefined') {
-        setStatus('status-eye', 'status-fail', 'Fail');
-        setOutput('out-eye', 'EyeDropper is not defined (Chromium 95+ required).');
-        return;
-      }
-      const dropper = new EyeDropper();
-      const result = await dropper.open();
-      setStatus('status-eye', 'status-pass', 'Pass');
-      setOutput('out-eye', 'Picked color: ' + result.sRGBHex);
-    } catch (err) {
-      setStatus('status-eye', 'status-partial', 'Partial');
-      setOutput('out-eye', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      // ---------------------------------------------------------------------------
+      // CLIPBOARD & SHARE
+      // ---------------------------------------------------------------------------
 
-  $('btn-pay').addEventListener('click', async () => {
-    const btn = $('btn-pay');
-    btn.disabled = true;
-    setStatus('status-pay', 'status-unknown', 'Opening…');
-    setOutput('out-pay', '');
-    try {
-      if (typeof PaymentRequest === 'undefined') {
-        setStatus('status-pay', 'status-fail', 'Fail');
-        setOutput('out-pay', 'PaymentRequest is not defined.');
-        return;
-      }
-      const methods = [
-        { supportedMethods: 'https://google.com/pay', data: { /* minimal */ } },
-        { supportedMethods: 'basic-card', data: { supportedNetworks: ['visa', 'mastercard'] } }
-      ];
-      const details = {
-        total: { label: 'Test total', amount: { currency: 'USD', value: '0.01' } }
-      };
-      const request = new PaymentRequest(methods, details);
-      const response = await request.show();
-      setStatus('status-pay', 'status-pass', 'Pass');
-      setOutput('out-pay', 'Payment sheet resolved. Method: ' + response.methodName + '. (No real charge was made.)');
-      await response.complete('success');
-    } catch (err) {
-      setStatus('status-pay', 'status-partial', 'Partial');
-      setOutput('out-pay', describeErrorForUser(err));
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      bindClick('btn-clip-w', async () => {
+        const btn = $('btn-clip-w');
+        btn.disabled = true;
+        setStatus('status-clip-w', 'status-unknown', 'Writing…');
+        setOutput('out-clip-w', '');
+        try {
+          if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            setStatus('status-clip-w', 'status-fail', 'Fail');
+            setOutput('out-clip-w', 'navigator.clipboard.writeText is not available.');
+            return;
+          }
+          const text = 'Clipboard test — ' + new Date().toISOString();
+          await navigator.clipboard.writeText(text);
+          setStatus('status-clip-w', 'status-pass', 'Pass');
+          setOutput('out-clip-w', 'Wrote to clipboard: “' + text + '”');
+        } catch (err) {
+          setStatus('status-clip-w', 'status-partial', 'Partial');
+          setOutput('out-clip-w', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-  // Gamepad API — connection requires a button press on the controller.
-  $('btn-gp').addEventListener('click', () => {
-    const btn = $('btn-gp');
-    btn.disabled = true;
-    setStatus('status-gp', 'status-unknown', 'Waiting…');
-    setOutput('out-gp', 'Press any button on a connected gamepad…');
-    if (typeof navigator.getGamepads !== 'function') {
-      setStatus('status-gp', 'status-fail', 'Fail');
-      setOutput('out-gp', 'navigator.getGamepads is not available.');
-      btn.disabled = false;
-      return;
-    }
-    let settled = false;
-    const finish = (statusClass, label, message) => {
-      if (settled) return;
-      settled = true;
-      setStatus('status-gp', statusClass, label);
-      setOutput('out-gp', message);
-      btn.disabled = false;
-    };
-    const onConnected = (event) => {
-      window.removeEventListener('gamepadconnected', onConnected);
-      finish('status-pass', 'Pass',
-        'Gamepad connected: “' + event.gamepad.id + '” (index ' + event.gamepad.index + ').');
-    };
-    window.addEventListener('gamepadconnected', onConnected);
-    // Safety timeout
-    setTimeout(() => {
-      if (!settled) {
-        window.removeEventListener('gamepadconnected', onConnected);
-        finish('status-partial', 'Partial',
-          'No gamepad button press detected within 10s. The API is present but no controller responded.');
-      }
-    }, 10000);
-  });
+      bindClick('btn-clip-r', async () => {
+        const btn = $('btn-clip-r');
+        btn.disabled = true;
+        setStatus('status-clip-r', 'status-unknown', 'Reading…');
+        setOutput('out-clip-r', '');
+        try {
+          if (!navigator.clipboard || !navigator.clipboard.readText) {
+            setStatus('status-clip-r', 'status-fail', 'Fail');
+            setOutput('out-clip-r', 'navigator.clipboard.readText is not available.');
+            return;
+          }
+          const text = await navigator.clipboard.readText();
+          setStatus('status-clip-r', 'status-pass', 'Pass');
+          setOutput('out-clip-r', text ? 'Clipboard text: “' + text + '”' : 'Clipboard is empty.');
+        } catch (err) {
+          setStatus('status-clip-r', 'status-partial', 'Partial');
+          setOutput('out-clip-r', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
 
-})();
-</script>
+      bindClick('btn-share', async () => {
+        const btn = $('btn-share');
+        btn.disabled = true;
+        setStatus('status-share', 'status-unknown', 'Sharing…');
+        setOutput('out-share', '');
+        try {
+          if (typeof navigator.share !== 'function') {
+            setStatus('status-share', 'status-fail', 'Fail');
+            setOutput('out-share', 'navigator.share is not available.');
+            return;
+          }
+          const data = {
+            title: 'Gesture-Gated API Test',
+            text: 'Testing the Web Share API from a click handler.',
+            url: location.href
+          };
+          if (navigator.canShare && !navigator.canShare(data)) {
+            setStatus('status-share', 'status-fail', 'Fail');
+            setOutput('out-share', 'navigator.canShare() returned false for this payload.');
+            return;
+          }
+          await navigator.share(data);
+          setStatus('status-share', 'status-pass', 'Pass');
+          setOutput('out-share', 'Share sheet resolved (the user completed or dismissed it).');
+        } catch (err) {
+          setStatus('status-share', 'status-partial', 'Partial');
+          setOutput('out-share', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // ---------------------------------------------------------------------------
+      // LOCATION & SENSORS
+      // ---------------------------------------------------------------------------
+
+      bindClick('btn-geo', () => {
+        const btn = $('btn-geo');
+        btn.disabled = true;
+        setStatus('status-geo', 'status-unknown', 'Locating…');
+        setOutput('out-geo', '');
+        if (!('geolocation' in navigator)) {
+          setStatus('status-geo', 'status-fail', 'Fail');
+          setOutput('out-geo', 'navigator.geolocation is not available.');
+          btn.disabled = false;
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setStatus('status-geo', 'status-pass', 'Pass');
+            setOutput('out-geo',
+              'Latitude: ' + pos.coords.latitude.toFixed(5) +
+              ', Longitude: ' + pos.coords.longitude.toFixed(5) +
+              ', Accuracy: ' + Math.round(pos.coords.accuracy) + ' m');
+            btn.disabled = false;
+          },
+          (err) => {
+            setStatus('status-geo', 'status-partial', 'Partial');
+            setOutput('out-geo', 'Geolocation error (' + err.code + '): ' + err.message);
+            btn.disabled = false;
+          },
+          { timeout: 10000, maximumAge: 0, enableHighAccuracy: false }
+        );
+      });
+
+      // DeviceOrientationEvent.requestPermission (iOS gate)
+      bindClick('btn-ori', async () => {
+        const btn = $('btn-ori');
+        btn.disabled = true;
+        setStatus('status-ori', 'status-unknown', 'Requesting…');
+        setOutput('out-ori', '');
+        try {
+          if (typeof DeviceOrientationEvent === 'undefined') {
+            setStatus('status-ori', 'status-fail', 'Fail');
+            setOutput('out-ori', 'DeviceOrientationEvent is not defined.');
+            return;
+          }
+          if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
+            // Non-iOS platforms have no gate; the API is simply present.
+            setStatus('status-ori', 'status-pass', 'Pass');
+            setOutput('out-ori', 'No requestPermission gate on this platform (iOS-only gate). API is present.');
+            return;
+          }
+          const state = await DeviceOrientationEvent.requestPermission();
+          setStatus('status-ori', state === 'granted' ? 'status-pass' : 'status-partial',
+            state === 'granted' ? 'Pass' : 'Partial');
+          setOutput('out-ori', 'DeviceOrientation permission: ' + state);
+        } catch (err) {
+          setStatus('status-ori', 'status-partial', 'Partial');
+          setOutput('out-ori', friendlyError(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // DeviceMotionEvent.requestPermission (iOS gate)
+      bindClick('btn-mot', async () => {
+        const btn = $('btn-mot');
+        btn.disabled = true;
+        setStatus('status-mot', 'status-unknown', 'Requesting…');
+        setOutput('out-mot', '');
+        try {
+          if (typeof DeviceMotionEvent === 'undefined') {
+            setStatus('status-mot', 'status-fail', 'Fail');
+            setOutput('out-mot', 'DeviceMotionEvent is not defined.');
+            return;
+          }
+          if (typeof DeviceMotionEvent.requestPermission !== 'function') {
+            setStatus('status-mot', 'status-pass', 'Pass');
+            setOutput('out-mot', 'No requestPermission gate on this platform (iOS-only gate). API is present.');
+            return;
+          }
+          const state = await DeviceMotionEvent.requestPermission();
+          setStatus('status-mot', state === 'granted' ? 'status-pass' : 'status-partial',
+            state === 'granted' ? 'Pass' : 'Partial');
+          setOutput('out-mot', 'DeviceMotion permission: ' + state);
+        } catch (err) {
+          setStatus('status-mot', 'status-partial', 'Partial');
+          setOutput('out-mot', friendlyError(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // ---------------------------------------------------------------------------
+      // HARDWARE PICKERS
+      // ---------------------------------------------------------------------------
+
+      bindClick('btn-bt', async () => {
+        const btn = $('btn-bt');
+        btn.disabled = true;
+        setStatus('status-bt', 'status-unknown', 'Scanning…');
+        setOutput('out-bt', '');
+        try {
+          if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
+            setStatus('status-bt', 'status-fail', 'Fail');
+            setOutput('out-bt', 'navigator.bluetooth.requestDevice is not available (Chromium + HTTPS required).');
+            return;
+          }
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ['generic_access'] }],
+            optionalServices: ['battery_service']
+          });
+          setStatus('status-bt', 'status-pass', 'Pass');
+          setOutput('out-bt', 'Selected Bluetooth device: ' + (device.name || '(unnamed)') + ' — id: ' + device.id);
+        } catch (err) {
+          setStatus('status-bt', 'status-partial', 'Partial');
+          setOutput('out-bt', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-usb', async () => {
+        const btn = $('btn-usb');
+        btn.disabled = true;
+        setStatus('status-usb', 'status-unknown', 'Scanning…');
+        setOutput('out-usb', '');
+        try {
+          if (!navigator.usb || typeof navigator.usb.requestDevice !== 'function') {
+            setStatus('status-usb', 'status-fail', 'Fail');
+            setOutput('out-usb', 'navigator.usb.requestDevice is not available.');
+            return;
+          }
+          // No filters: let the user choose any USB device for testing.
+          const device = await navigator.usb.requestDevice({ filters: [] });
+          setStatus('status-usb', 'status-pass', 'Pass');
+          setOutput('out-usb',
+            'Selected USB device — Vendor: 0x' + device.vendorId.toString(16).padStart(4, '0') +
+            ', Product: 0x' + device.productId.toString(16).padStart(4, '0'));
+        } catch (err) {
+          setStatus('status-usb', 'status-partial', 'Partial');
+          setOutput('out-usb', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-serial', async () => {
+        const btn = $('btn-serial');
+        btn.disabled = true;
+        setStatus('status-serial', 'status-unknown', 'Scanning…');
+        setOutput('out-serial', '');
+        try {
+          if (!navigator.serial || typeof navigator.serial.requestPort !== 'function') {
+            setStatus('status-serial', 'status-fail', 'Fail');
+            setOutput('out-serial', 'navigator.serial.requestPort is not available (Chromium + HTTPS required).');
+            return;
+          }
+          const port = await navigator.serial.requestPort();
+          setStatus('status-serial', 'status-pass', 'Pass');
+          const info = port.getInfo ? port.getInfo() : {};
+          setOutput('out-serial',
+            'Serial port granted. USB Vendor: ' + (info.usbVendorId != null ? '0x' + info.usbVendorId.toString(16) : 'unknown') +
+            ', Product: ' + (info.usbProductId != null ? '0x' + info.usbProductId.toString(16) : 'unknown'));
+          // Close the port so it is not left open by the test page
+          await port.close();
+        } catch (err) {
+          setStatus('status-serial', 'status-partial', 'Partial');
+          setOutput('out-serial', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-contacts', async () => {
+        const btn = $('btn-contacts');
+        btn.disabled = true;
+        setStatus('status-contacts', 'status-unknown', 'Opening…');
+        setOutput('out-contacts', '');
+        try {
+          if (!navigator.contacts || typeof navigator.contacts.select !== 'function') {
+            setStatus('status-contacts', 'status-fail', 'Fail');
+            setOutput('out-contacts', 'navigator.contacts.select is not available (Chromium mobile + HTTPS required).');
+            return;
+          }
+          const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: true });
+          setStatus('status-contacts', 'status-pass', 'Pass');
+          setOutput('out-contacts',
+            contacts.length === 0
+              ? 'Picker opened but no contacts were selected.'
+              : 'Selected ' + contacts.length + ' contact(s). First name: ' + (contacts[0].name ? contacts[0].name.join(' ') : '(no name field granted)'));
+        } catch (err) {
+          setStatus('status-contacts', 'status-partial', 'Partial');
+          setOutput('out-contacts', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // ---------------------------------------------------------------------------
+      // NOTIFICATIONS, WAKE LOCK, IDLE, EYEDROPPER, PAYMENT, GAMEPAD
+      // ---------------------------------------------------------------------------
+
+      bindClick('btn-notif', async () => {
+        const btn = $('btn-notif');
+        btn.disabled = true;
+        setStatus('status-notif', 'status-unknown', 'Requesting…');
+        setOutput('out-notif', '');
+        try {
+          if (typeof Notification === 'undefined') {
+            setStatus('status-notif', 'status-fail', 'Fail');
+            setOutput('out-notif', 'Notification is not defined.');
+            return;
+          }
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            // Show a notification to prove the permission is functional.
+            new Notification('Gesture-gated test', {
+              body: 'Notifications are working from a click handler.',
+              tag: '__gesture_test__'
+            });
+            setStatus('status-notif', 'status-pass', 'Pass');
+            setOutput('out-notif', 'Permission granted and a test notification was shown.');
+          } else {
+            setStatus('status-notif', 'status-partial', 'Partial');
+            setOutput('out-notif', 'Permission state: ' + permission);
+          }
+        } catch (err) {
+          setStatus('status-notif', 'status-partial', 'Partial');
+          setOutput('out-notif', friendlyError(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-wake', async () => {
+        const btn = $('btn-wake');
+        btn.disabled = true;
+        setStatus('status-wake', 'status-unknown', 'Requesting…');
+        setOutput('out-wake', '');
+        try {
+          if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') {
+            setStatus('status-wake', 'status-fail', 'Fail');
+            setOutput('out-wake', 'navigator.wakeLock.request is not available.');
+            return;
+          }
+          const sentinel = await navigator.wakeLock.request('screen');
+          setStatus('status-wake', 'status-pass', 'Pass');
+          setOutput('out-wake', 'Wake lock granted (type: ' + sentinel.type + '). Releasing in 2s.');
+          setTimeout(async () => {
+            try { await sentinel.release(); } catch (_) { }
+          }, 2000);
+        } catch (err) {
+          setStatus('status-wake', 'status-partial', 'Partial');
+          setOutput('out-wake', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-idle', async () => {
+        const btn = $('btn-idle');
+        btn.disabled = true;
+        setStatus('status-idle', 'status-unknown', 'Requesting…');
+        setOutput('out-idle', '');
+        try {
+          if (typeof IdleDetector === 'undefined') {
+            setStatus('status-idle', 'status-fail', 'Fail');
+            setOutput('out-idle', 'IdleDetector is not defined (Chrome 94+ behind a flag / HTTPS required).');
+            return;
+          }
+          if (typeof IdleDetector.requestPermission !== 'function') {
+            setStatus('status-idle', 'status-fail', 'Fail');
+            setOutput('out-idle', 'IdleDetector.requestPermission static method is missing.');
+            return;
+          }
+          const state = await IdleDetector.requestPermission();
+          setStatus('status-idle', state === 'granted' ? 'status-pass' : 'status-partial',
+            state === 'granted' ? 'Pass' : 'Partial');
+          setOutput('out-idle', 'Idle-detection permission: ' + state);
+        } catch (err) {
+          setStatus('status-idle', 'status-partial', 'Partial');
+          setOutput('out-idle', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-eye', async () => {
+        const btn = $('btn-eye');
+        btn.disabled = true;
+        setStatus('status-eye', 'status-unknown', 'Opening…');
+        setOutput('out-eye', '');
+        try {
+          if (typeof EyeDropper === 'undefined') {
+            setStatus('status-eye', 'status-fail', 'Fail');
+            setOutput('out-eye', 'EyeDropper is not defined (Chromium 95+ required).');
+            return;
+          }
+          const dropper = new EyeDropper();
+          const result = await dropper.open();
+          setStatus('status-eye', 'status-pass', 'Pass');
+          setOutput('out-eye', 'Picked color: ' + result.sRGBHex);
+        } catch (err) {
+          setStatus('status-eye', 'status-partial', 'Partial');
+          setOutput('out-eye', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      bindClick('btn-pay', async () => {
+        const btn = $('btn-pay');
+        btn.disabled = true;
+        setStatus('status-pay', 'status-unknown', 'Opening…');
+        setOutput('out-pay', '');
+        try {
+          if (typeof PaymentRequest === 'undefined') {
+            setStatus('status-pay', 'status-fail', 'Fail');
+            setOutput('out-pay', 'PaymentRequest is not defined.');
+            return;
+          }
+          const methods = [
+            { supportedMethods: 'https://google.com/pay', data: { /* minimal */ } },
+            { supportedMethods: 'basic-card', data: { supportedNetworks: ['visa', 'mastercard'] } }
+          ];
+          const details = {
+            total: { label: 'Test total', amount: { currency: 'USD', value: '0.01' } }
+          };
+          const request = new PaymentRequest(methods, details);
+          const response = await request.show();
+          setStatus('status-pay', 'status-pass', 'Pass');
+          setOutput('out-pay', 'Payment sheet resolved. Method: ' + response.methodName + '. (No real charge was made.)');
+          await response.complete('success');
+        } catch (err) {
+          setStatus('status-pay', 'status-partial', 'Partial');
+          setOutput('out-pay', describeErrorForUser(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      // Gamepad API — connection requires a button press on the controller.
+      bindClick('btn-gp', () => {
+        const btn = $('btn-gp');
+        btn.disabled = true;
+        setStatus('status-gp', 'status-unknown', 'Waiting…');
+        setOutput('out-gp', 'Press any button on a connected gamepad…');
+        if (typeof navigator.getGamepads !== 'function') {
+          setStatus('status-gp', 'status-fail', 'Fail');
+          setOutput('out-gp', 'navigator.getGamepads is not available.');
+          btn.disabled = false;
+          return;
+        }
+        let settled = false;
+        const finish = (statusClass, label, message) => {
+          if (settled) return;
+          settled = true;
+          setStatus('status-gp', statusClass, label);
+          setOutput('out-gp', message);
+          btn.disabled = false;
+        };
+        const onConnected = (event) => {
+          window.removeEventListener('gamepadconnected', onConnected);
+          finish('status-pass', 'Pass',
+            'Gamepad connected: “' + event.gamepad.id + '” (index ' + event.gamepad.index + ').');
+        };
+        window.addEventListener('gamepadconnected', onConnected);
+        // Safety timeout
+        setTimeout(() => {
+          if (!settled) {
+            window.removeEventListener('gamepadconnected', onConnected);
+            finish('status-partial', 'Partial',
+              'No gamepad button press detected within 10s. The API is present but no controller responded.');
+          }
+        }, 10000);
+      });
+
+    })();
+  </script>
 
 </body>
+
 </html>

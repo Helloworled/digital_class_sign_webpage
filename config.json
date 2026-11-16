@@ -1,35 +1,59 @@
 {
   "stages": [
-    { "minutes": 1, "color": "#c0392b" },
-    { "minutes": 5, "color": "#e67e22" },
-    { "hours": 1, "color": "#2ecc71" },
-    { "days": 1, "color": "#2980b9" }
+    { "months": 1, "color": "#18F200"},
+    { "days": 25, "color": "#019FFF" },
+    { "days": 20, "color": "#F7FF00" },
+    { "days": 10, "color": "#FF0000" },
+    { "days": 2, "color": "#000000" }
   ],
   "timers": [
     {
-      "name": "Morning assembly",
-      "end": "2026/11/17 08/00/00",
-      "subtimers": [
-        { "name": "Line up in class", "end": "2026/11/17 07/45/00" },
-        { "name": "Walk to playground", "end": "2026/11/17 07/52/00" },
-        { "name": "Assembly ends", "end": "2026/11/17 08/30/00" }
-      ]
+      "name": "期中家长会",
+      "end": "2026/11/26 13/30/00",
+      "subtimers": []
     },
     {
-      "name": "Math exam",
-      "end": "2026/11/20 14/30/00",
-      "subtimers": [
-        { "name": "Reading time", "end": "2026/11/20 14/05/00" },
-        { "name": "Section A", "end": "2026/11/20 13/45/00" },
-        { "name": "Section B", "end": "2026/11/20 14/15/00" }
-      ]
-    },
-    {
-      "name": "Winter break",
-      "end": "2026/12/19 00/00/00",
+      "name": "普高英语合格考听力",
+      "end": "2026/12/18 00/00/00",
       "subtimers": [
         { "name": "Last school day", "end": "2026/12/18 15/30/00" }
       ]
+    },
+    {
+      "name": "AP考试",
+      "end": "2027/05/02 08/00/00",
+      "subtimers": [
+        { "name": "Physics C: Mechanics-物理C:力学", "end": "2027/05/03 08/50/00" },
+        { "name": "Physics C: Electricity and Magnetism-物理C:电磁学", "end": "2027/05/05 13/40/00" },
+        { "name": "Calculus BC-微积分 BC", "end": "2027/05/10 08/50/00" },
+        { "name": "Statistics-统计学", "end": "2027/05/11 13/40/00" },
+        { "name": "English Language and Composition-英语语言与写作", "end": "2027/05/12 08/50/00" },
+        { "name": "Computer Science Principles-计算机原理", "end": "2027/05/14 08/50/00" },
+        { "name": "Others-其他", "end": "2026/12/16 08/50/00" }
+      ]
+    },
+    {
+      "name": "普高合格考",
+      "end": "2027/01/09 08/00/00",
+      "subtimers": [
+        { "name": "第一天（周六）", "end": "2027/01/09 08/00/00" },
+        { "name": "第二天（周日）", "end": "2027/01/10 08/00/00" }
+      ]
+    },
+    {
+      "name": "期末考试（待定）",
+      "end": "2027/01/13 08/00/00",
+      "subtimers": []
+    },
+    {
+      "name": "放寒假",
+      "end": "2027/01/24 13/00/00",
+      "subtimers": []
+    },
+    {
+      "name": "其他事件",
+      "end": "2027/11/16 08/00/00",
+      "subtimers": []
     }
   ]
 }

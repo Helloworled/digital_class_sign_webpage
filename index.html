@@ -1,11 +1,854 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>占位页</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser API Test Suite</title>
+    <style>
+        /* Minimal CSS for basic readability */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            color: #222;
+        }
+        h1, h2, h3 {
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #fafafa;
+        }
+        .status-pass {
+            color: #0a7e3a;
+            font-weight: 600;
+        }
+        .status-fail {
+            color: #b00020;
+            font-weight: 600;
+        }
+        .status-partial {
+            color: #b86e00;
+            font-weight: 600;
+        }
+        .status-unknown {
+            color: #666;
+            font-weight: 600;
+        }
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0 2rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        .summary-item {
+            font-size: 0.95rem;
+        }
+        .summary-item strong {
+            font-size: 1.2rem;
+        }
+        .category-header {
+            background: #eee;
+            font-weight: 700;
+            font-size: 1rem;
+            border-bottom: 2px solid #ccc;
+            padding-top: 1.2rem;
+        }
+        .note {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 0.5rem 0;
+        }
+        button {
+            font: inherit;
+            padding: 0.5rem 1.2rem;
+            cursor: pointer;
+            border: 1px solid #333;
+            background: #fff;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #eee;
+        }
+    </style>
 </head>
 <body>
-  <h1>Hello World</h1>
+
+<h1>Browser API Test Suite</h1>
+<p class="note">
+    This page tests the presence and basic functionality of a representative set of major Web APIs.
+    Results reflect the capabilities of the <em>current browser environment</em>.
+    A “Pass” means the API exists and a minimal smoke test succeeded.
+    A “Partial” means the API exists but the smoke test did not complete as expected (e.g., permission denied).
+    “Fail” means the API is not available.
+</p>
+
+<div id="summary" class="summary">
+    <!-- Summary will be injected here -->
+</div>
+
+<div>
+    <button id="rerun-button">Re-run All Tests</button>
+</div>
+
+<div id="results-container">
+    <!-- Table will be injected here -->
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ---------------------------------------------------------------------
+    // Test definitions
+    // ---------------------------------------------------------------------
+    // Each test object:
+    //   name: string — API name for display
+    //   category: string — grouping category
+    //   description: string — what the test does
+    //   test: function — returns a promise or boolean
+    //     - return true  → Pass
+    //     - return false → Fail (API missing)
+    //     - throw Error  → Partial (API exists but functional test failed)
+    //     - return 'partial' → Partial (explicit)
+    // ---------------------------------------------------------------------
+
+    const tests = [
+
+        // ==================== STORAGE ====================
+        {
+            name: 'localStorage',
+            category: 'Storage',
+            description: 'Read/write a temporary key.',
+            test: function() {
+                if (typeof localStorage === 'undefined') return false;
+                try {
+                    localStorage.setItem('__api_test__', '1');
+                    const val = localStorage.getItem('__api_test__');
+                    localStorage.removeItem('__api_test__');
+                    return val === '1';
+                } catch (e) {
+                    throw new Error('localStorage exists but access failed: ' + e.message);
+                }
+            }
+        },
+        {
+            name: 'sessionStorage',
+            category: 'Storage',
+            description: 'Read/write a temporary key.',
+            test: function() {
+                if (typeof sessionStorage === 'undefined') return false;
+                try {
+                    sessionStorage.setItem('__api_test__', '1');
+                    const val = sessionStorage.getItem('__api_test__');
+                    sessionStorage.removeItem('__api_test__');
+                    return val === '1';
+                } catch (e) {
+                    throw new Error('sessionStorage exists but access failed: ' + e.message);
+                }
+            }
+        },
+        {
+            name: 'IndexedDB',
+            category: 'Storage',
+            description: 'Open a temporary database.',
+            test: function() {
+                if (typeof indexedDB === 'undefined') return false;
+                return new Promise((resolve) => {
+                    const request = indexedDB.open('__api_test_db__', 1);
+                    request.onerror = () => resolve(false); // missing or blocked
+                    request.onsuccess = () => {
+                        request.result.close();
+                        indexedDB.deleteDatabase('__api_test_db__');
+                        resolve(true);
+                    };
+                    request.onupgradeneeded = (event) => {
+                        // Create a dummy object store so the open can succeed
+                        event.target.result.createObjectStore('test');
+                    };
+                });
+            }
+        },
+        {
+            name: 'CacheStorage',
+            category: 'Storage',
+            description: 'Check for caches object.',
+            test: function() {
+                return typeof caches !== 'undefined';
+            }
+        },
+        {
+            name: 'StorageManager',
+            category: 'Storage',
+            description: 'Check for navigator.storage.',
+            test: function() {
+                return navigator.storage && typeof navigator.storage.estimate === 'function';
+            }
+        },
+
+        // ==================== NETWORK ====================
+        {
+            name: 'Fetch API',
+            category: 'Network',
+            description: 'Check for global fetch function.',
+            test: function() {
+                return typeof fetch === 'function';
+            }
+        },
+        {
+            name: 'XMLHttpRequest',
+            category: 'Network',
+            description: 'Check for XMLHttpRequest constructor.',
+            test: function() {
+                return typeof XMLHttpRequest !== 'undefined';
+            }
+        },
+        {
+            name: 'WebSocket',
+            category: 'Network',
+            description: 'Check for WebSocket constructor.',
+            test: function() {
+                return typeof WebSocket !== 'undefined';
+            }
+        },
+        {
+            name: 'Server-Sent Events (EventSource)',
+            category: 'Network',
+            description: 'Check for EventSource constructor.',
+            test: function() {
+                return typeof EventSource !== 'undefined';
+            }
+        },
+        {
+            name: 'Beacon API',
+            category: 'Network',
+            description: 'Check for navigator.sendBeacon.',
+            test: function() {
+                return typeof navigator.sendBeacon === 'function';
+            }
+        },
+        {
+            name: 'BroadcastChannel',
+            category: 'Network',
+            description: 'Check for BroadcastChannel constructor.',
+            test: function() {
+                return typeof BroadcastChannel !== 'undefined';
+            }
+        },
+
+        // ==================== MEDIA ====================
+        {
+            name: 'Web Audio API',
+            category: 'Media',
+            description: 'Create a minimal AudioContext.',
+            test: function() {
+                if (typeof AudioContext === 'undefined' && typeof webkitAudioContext === 'undefined') {
+                    return false;
+                }
+                try {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new Ctx();
+                    ctx.close();
+                    return true;
+                } catch (e) {
+                    throw new Error('AudioContext exists but failed to initialize: ' + e.message);
+                }
+            }
+        },
+        {
+            name: 'HTMLMediaElement (audio/video)',
+            category: 'Media',
+            description: 'Check for HTMLMediaElement prototype.',
+            test: function() {
+                return typeof HTMLMediaElement !== 'undefined';
+            }
+        },
+        {
+            name: 'MediaDevices (getUserMedia)',
+            category: 'Media',
+            description: 'Check for navigator.mediaDevices.getUserMedia.',
+            test: function() {
+                return navigator.mediaDevices &&
+                    typeof navigator.mediaDevices.getUserMedia === 'function';
+            }
+        },
+        {
+            name: 'MediaRecorder',
+            category: 'Media',
+            description: 'Check for MediaRecorder constructor.',
+            test: function() {
+                return typeof MediaRecorder !== 'undefined';
+            }
+        },
+        {
+            name: 'SpeechSynthesis',
+            category: 'Media',
+            description: 'Check for speechSynthesis object.',
+            test: function() {
+                return typeof speechSynthesis !== 'undefined';
+            }
+        },
+
+        // ==================== GRAPHICS ====================
+        {
+            name: 'Canvas 2D',
+            category: 'Graphics',
+            description: 'Get a 2d context from a temporary canvas.',
+            test: function() {
+                if (typeof HTMLCanvasElement === 'undefined') return false;
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                return !!ctx;
+            }
+        },
+        {
+            name: 'WebGL',
+            category: 'Graphics',
+            description: 'Get a webgl context from a temporary canvas.',
+            test: function() {
+                if (typeof HTMLCanvasElement === 'undefined') return false;
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') ||
+                    canvas.getContext('experimental-webgl');
+                return !!gl;
+            }
+        },
+        {
+            name: 'WebGL2',
+            category: 'Graphics',
+            description: 'Get a webgl2 context.',
+            test: function() {
+                if (typeof HTMLCanvasElement === 'undefined') return false;
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl2');
+                return !!gl;
+            }
+        },
+        {
+            name: 'OffscreenCanvas',
+            category: 'Graphics',
+            description: 'Check for OffscreenCanvas constructor.',
+            test: function() {
+                return typeof OffscreenCanvas !== 'undefined';
+            }
+        },
+        {
+            name: 'WebGPU',
+            category: 'Graphics',
+            description: 'Check for navigator.gpu.',
+            test: function() {
+                return !!navigator.gpu;
+            }
+        },
+
+        // ==================== DEVICE / HARDWARE ====================
+        {
+            name: 'Geolocation',
+            category: 'Device',
+            description: 'Check for navigator.geolocation.',
+            test: function() {
+                return 'geolocation' in navigator;
+            }
+        },
+        {
+            name: 'DeviceOrientationEvent',
+            category: 'Device',
+            description: 'Check for DeviceOrientationEvent constructor.',
+            test: function() {
+                return typeof DeviceOrientationEvent !== 'undefined';
+            }
+        },
+        {
+            name: 'DeviceMotionEvent',
+            category: 'Device',
+            description: 'Check for DeviceMotionEvent constructor.',
+            test: function() {
+                return typeof DeviceMotionEvent !== 'undefined';
+            }
+        },
+        {
+            name: 'Vibration API',
+            category: 'Device',
+            description: 'Check for navigator.vibrate.',
+            test: function() {
+                return typeof navigator.vibrate === 'function';
+            }
+        },
+        {
+            name: 'Battery Status API',
+            category: 'Device',
+            description: 'Check for navigator.getBattery.',
+            test: function() {
+                return typeof navigator.getBattery === 'function';
+            }
+        },
+        {
+            name: 'Gamepad API',
+            category: 'Device',
+            description: 'Check for navigator.getGamepads.',
+            test: function() {
+                return typeof navigator.getGamepads === 'function';
+            }
+        },
+        {
+            name: 'Clipboard API',
+            category: 'Device',
+            description: 'Check for navigator.clipboard.',
+            test: function() {
+                return navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+            }
+        },
+        {
+            name: 'Web Bluetooth',
+            category: 'Device',
+            description: 'Check for navigator.bluetooth.',
+            test: function() {
+                return !!navigator.bluetooth;
+            }
+        },
+        {
+            name: 'WebUSB',
+            category: 'Device',
+            description: 'Check for navigator.usb.',
+            test: function() {
+                return !!navigator.usb;
+            }
+        },
+        {
+            name: 'Web Serial',
+            category: 'Device',
+            description: 'Check for navigator.serial.',
+            test: function() {
+                return !!navigator.serial;
+            }
+        },
+
+        // ==================== OBSERVERS ====================
+        {
+            name: 'IntersectionObserver',
+            category: 'Observers',
+            description: 'Check for IntersectionObserver constructor.',
+            test: function() {
+                return typeof IntersectionObserver !== 'undefined';
+            }
+        },
+        {
+            name: 'MutationObserver',
+            category: 'Observers',
+            description: 'Check for MutationObserver constructor.',
+            test: function() {
+                return typeof MutationObserver !== 'undefined';
+            }
+        },
+        {
+            name: 'ResizeObserver',
+            category: 'Observers',
+            description: 'Check for ResizeObserver constructor.',
+            test: function() {
+                return typeof ResizeObserver !== 'undefined';
+            }
+        },
+        {
+            name: 'PerformanceObserver',
+            category: 'Observers',
+            description: 'Check for PerformanceObserver constructor.',
+            test: function() {
+                return typeof PerformanceObserver !== 'undefined';
+            }
+        },
+
+        // ==================== SECURITY / CRYPTO ====================
+        {
+            name: 'Web Crypto API',
+            category: 'Security',
+            description: 'Check for crypto.subtle.',
+            test: function() {
+                return typeof crypto !== 'undefined' && !!crypto.subtle;
+            }
+        },
+        {
+            name: 'Permissions API',
+            category: 'Security',
+            description: 'Check for navigator.permissions.query.',
+            test: function() {
+                return navigator.permissions &&
+                    typeof navigator.permissions.query === 'function';
+            }
+        },
+        {
+            name: 'Credential Management API',
+            category: 'Security',
+            description: 'Check for navigator.credentials.',
+            test: function() {
+                return !!navigator.credentials;
+            }
+        },
+
+        // ==================== WORKERS ====================
+        {
+            name: 'Web Workers',
+            category: 'Workers',
+            description: 'Check for Worker constructor.',
+            test: function() {
+                return typeof Worker !== 'undefined';
+            }
+        },
+        {
+            name: 'Service Workers',
+            category: 'Workers',
+            description: 'Check for serviceWorker in navigator.',
+            test: function() {
+                return 'serviceWorker' in navigator;
+            }
+        },
+        {
+            name: 'Shared Workers',
+            category: 'Workers',
+            description: 'Check for SharedWorker constructor.',
+            test: function() {
+                return typeof SharedWorker !== 'undefined';
+            }
+        },
+        {
+            name: 'SharedArrayBuffer',
+            category: 'Workers',
+            description: 'Check for SharedArrayBuffer (may be restricted).',
+            test: function() {
+                return typeof SharedArrayBuffer !== 'undefined';
+            }
+        },
+
+        // ==================== NOTIFICATIONS & UI ====================
+        {
+            name: 'Notifications API',
+            category: 'UI & Notifications',
+            description: 'Check for Notification constructor.',
+            test: function() {
+                return typeof Notification !== 'undefined';
+            }
+        },
+        {
+            name: 'Page Visibility API',
+            category: 'UI & Notifications',
+            description: 'Check for document.visibilityState.',
+            test: function() {
+                return typeof document.visibilityState === 'string';
+            }
+        },
+        {
+            name: 'Fullscreen API',
+            category: 'UI & Notifications',
+            description: 'Check for document.documentElement.requestFullscreen.',
+            test: function() {
+                return typeof document.documentElement.requestFullscreen === 'function';
+            }
+        },
+        {
+            name: 'Picture-in-Picture API',
+            category: 'UI & Notifications',
+            description: 'Check for document.pictureInPictureEnabled.',
+            test: function() {
+                return 'pictureInPictureEnabled' in document;
+            }
+        },
+        {
+            name: 'Clipboard (writeText)',
+            category: 'UI & Notifications',
+            description: 'Confirm navigator.clipboard.writeText exists.',
+            test: function() {
+                return navigator.clipboard &&
+                    typeof navigator.clipboard.writeText === 'function';
+            }
+        },
+
+        // ==================== MISCELLANEOUS ====================
+        {
+            name: 'History API',
+            category: 'Misc',
+            description: 'Check for history.pushState.',
+            test: function() {
+                return typeof history.pushState === 'function';
+            }
+        },
+        {
+            name: 'URL API',
+            category: 'Misc',
+            description: 'Construct a URL object.',
+            test: function() {
+                if (typeof URL === 'undefined') return false;
+                try {
+                    const u = new URL('https://example.com/path?q=1');
+                    return u.hostname === 'example.com';
+                } catch (e) {
+                    throw new Error('URL exists but constructor failed: ' + e.message);
+                }
+            }
+        },
+        {
+            name: 'AbortController',
+            category: 'Misc',
+            description: 'Check for AbortController constructor.',
+            test: function() {
+                return typeof AbortController !== 'undefined';
+            }
+        },
+        {
+            name: 'ResizeObserver (recheck)',
+            category: 'Misc',
+            description: 'Duplicate check for robustness.',
+            test: function() {
+                return typeof ResizeObserver !== 'undefined';
+            }
+        },
+        {
+            name: 'EyeDropper API',
+            category: 'Misc',
+            description: 'Check for EyeDropper constructor.',
+            test: function() {
+                return typeof EyeDropper !== 'undefined';
+            }
+        },
+        {
+            name: 'Contact Picker API',
+            category: 'Misc',
+            description: 'Check for navigator.contacts.',
+            test: function() {
+                return !!navigator.contacts;
+            }
+        },
+        {
+            name: 'Idle Detection API',
+            category: 'Misc',
+            description: 'Check for IdleDetector.',
+            test: function() {
+                return typeof IdleDetector !== 'undefined';
+            }
+        },
+        {
+            name: 'Screen Wake Lock API',
+            category: 'Misc',
+            description: 'Check for navigator.wakeLock.',
+            test: function() {
+                return !!navigator.wakeLock;
+            }
+        },
+        {
+            name: 'Web Share API',
+            category: 'Misc',
+            description: 'Check for navigator.share.',
+            test: function() {
+                return typeof navigator.share === 'function';
+            }
+        },
+        {
+            name: 'Payment Request API',
+            category: 'Misc',
+            description: 'Check for PaymentRequest constructor.',
+            test: function() {
+                return typeof PaymentRequest !== 'undefined';
+            }
+        },
+        {
+            name: 'Web Locks API',
+            category: 'Misc',
+            description: 'Check for navigator.locks.',
+            test: function() {
+                return !!navigator.locks;
+            }
+        },
+        {
+            name: 'Compression Streams',
+            category: 'Misc',
+            description: 'Check for CompressionStream constructor.',
+            test: function() {
+                return typeof CompressionStream !== 'undefined';
+            }
+        }
+    ];
+
+    // ---------------------------------------------------------------------
+    // Runner & Renderer
+    // ---------------------------------------------------------------------
+
+    const resultsContainer = document.getElementById('results-container');
+    const summaryContainer = document.getElementById('summary');
+    const rerunButton = document.getElementById('rerun-button');
+
+    /**
+     * Normalizes a test result into one of: 'pass', 'fail', 'partial', 'unknown'.
+     */
+    function normalizeResult(raw) {
+        if (raw === true) return 'pass';
+        if (raw === false) return 'fail';
+        if (raw === 'partial') return 'partial';
+        if (raw instanceof Error) return 'partial'; // threw → exists but failed
+        return 'unknown';
+    }
+
+    /**
+     * Builds the status cell HTML.
+     */
+    function statusBadge(status) {
+        switch (status) {
+            case 'pass': return '<span class="status-pass">Pass</span>';
+            case 'fail': return '<span class="status-fail">Fail</span>';
+            case 'partial': return '<span class="status-partial">Partial</span>';
+            default: return '<span class="status-unknown">Unknown</span>';
+        }
+    }
+
+    /**
+     * Runs a single test and returns a normalized status plus optional detail.
+     */
+    async function runSingleTest(test) {
+        try {
+            const raw = await test.test();
+            const status = normalizeResult(raw);
+            let detail = '';
+            if (status === 'partial') {
+                if (raw instanceof Error) {
+                    detail = raw.message;
+                } else if (raw === 'partial') {
+                    detail = 'API exists but minimal smoke test did not fully succeed.';
+                }
+            }
+            return { status, detail };
+        } catch (err) {
+            // A thrown error from the test function indicates the API exists
+            // (otherwise the test would have returned false) but the smoke test failed.
+            return {
+                status: 'partial',
+                detail: err.message || String(err)
+            };
+        }
+    }
+
+    /**
+     * Renders the full results table.
+     */
+    function render(results) {
+        // Group by category
+        const byCategory = {};
+        results.forEach(r => {
+            if (!byCategory[r.category]) byCategory[r.category] = [];
+            byCategory[r.category].push(r);
+        });
+
+        // Sort categories alphabetically, but place "Misc" near the end for aesthetics
+        const categoryOrder = Object.keys(byCategory).sort((a, b) => {
+            if (a === 'Misc') return 1;
+            if (b === 'Misc') return -1;
+            return a.localeCompare(b);
+        });
+
+        let html = '<table>';
+        html += '<thead><tr>' +
+            '<th>API</th>' +
+            '<th>Category</th>' +
+            '<th>Description</th>' +
+            '<th>Status</th>' +
+            '<th>Detail</th>' +
+            '</tr></thead><tbody>';
+
+        let total = 0;
+        let pass = 0;
+        let fail = 0;
+        let partial = 0;
+        let unknown = 0;
+
+        categoryOrder.forEach(cat => {
+            // Category header row
+            html += `<tr class="category-header"><td colspan="5">${cat}</td></tr>`;
+            byCategory[cat].forEach(r => {
+                total++;
+                if (r.status === 'pass') pass++;
+                else if (r.status === 'fail') fail++;
+                else if (r.status === 'partial') partial++;
+                else unknown++;
+
+                html += '<tr>';
+                html += `<td><strong>${r.name}</strong></td>`;
+                html += `<td>${r.category}</td>`;
+                html += `<td>${r.description}</td>`;
+                html += `<td>${statusBadge(r.status)}</td>`;
+                html += `<td>${r.detail || '—'}</td>`;
+                html += '</tr>';
+            });
+        });
+
+        html += '</tbody></table>';
+        resultsContainer.innerHTML = html;
+
+        // Summary
+        const passPercent = total ? Math.round((pass / total) * 100) : 0;
+        summaryContainer.innerHTML = `
+            <div class="summary-item">Total probes: <strong>${total}</strong></div>
+            <div class="summary-item">Pass: <strong class="status-pass">${pass}</strong></div>
+            <div class="summary-item">Partial: <strong class="status-partial">${partial}</strong></div>
+            <div class="summary-item">Fail: <strong class="status-fail">${fail}</strong></div>
+            <div class="summary-item">Unknown: <strong class="status-unknown">${unknown}</strong></div>
+            <div class="summary-item">Compatibility score: <strong>${passPercent}%</strong></div>
+        `;
+    }
+
+    /**
+     * Main runner: executes all tests (in parallel) and renders results.
+     */
+    async function runAllTests() {
+        resultsContainer.innerHTML = '<p>Running tests…</p>';
+        summaryContainer.innerHTML = '';
+
+        // Run all tests concurrently
+        const promises = tests.map(async (test) => {
+            const { status, detail } = await runSingleTest(test);
+            return {
+                name: test.name,
+                category: test.category,
+                description: test.description,
+                status: status,
+                detail: detail
+            };
+        });
+
+        const results = await Promise.all(promises);
+        render(results);
+    }
+
+    // ---------------------------------------------------------------------
+    // Bootstrap
+    // ---------------------------------------------------------------------
+
+    // Initial run
+    runAllTests();
+
+    // Re-run button
+    rerunButton.addEventListener('click', runAllTests);
+
+})();
+</script>
+
 </body>
 </html>

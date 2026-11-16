@@ -1,0 +1,35 @@
+{
+  "stages": [
+    { "minutes": 1, "color": "#c0392b" },
+    { "minutes": 5, "color": "#e67e22" },
+    { "hours": 1, "color": "#2ecc71" },
+    { "days": 1, "color": "#2980b9" }
+  ],
+  "timers": [
+    {
+      "name": "Morning assembly",
+      "end": "2026/11/17 08/00/00",
+      "subtimers": [
+        { "name": "Line up in class", "end": "2026/11/17 07/45/00" },
+        { "name": "Walk to playground", "end": "2026/11/17 07/52/00" },
+        { "name": "Assembly ends", "end": "2026/11/17 08/30/00" }
+      ]
+    },
+    {
+      "name": "Math exam",
+      "end": "2026/11/20 14/30/00",
+      "subtimers": [
+        { "name": "Reading time", "end": "2026/11/20 14/05/00" },
+        { "name": "Section A", "end": "2026/11/20 13/45/00" },
+        { "name": "Section B", "end": "2026/11/20 14/15/00" }
+      ]
+    },
+    {
+      "name": "Winter break",
+      "end": "2026/12/19 00/00/00",
+      "subtimers": [
+        { "name": "Last school day", "end": "2026/12/18 15/30/00" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Set</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            color: #222;
+        }
+
+        .titlebar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .titlebar a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .titlebar a:hover {
+            text-decoration: underline;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .remaining {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
+        .timer {
+            font-weight: 600;
+        }
+
+        td.sub {
+            padding-left: 2rem;
+            color: #555;
+        }
+
+        .loading {
+            text-align: center;
+            color: #777;
+            padding: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="titlebar">
+        <h1 id="pageTitle"></h1>
+        <a id="backLink" href="index.html"></a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th id="timerHeader"></th>
+                <th id="remainingHeader"></th>
+            </tr>
+        </thead>
+        <tbody id="timerBody">
+            <tr><td colspan="2" class="loading" id="loadingText"></td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        const I18N = {
+            en: {
+                title: 'Timer Set',
+                back: '← Back to Landing Page',
+                timerHeader: 'Timer',
+                remainingHeader: 'Remaining (years/months/days hours/minutes/secconds)',
+                loading: 'Loading config…',
+                timeUp: 'time is up'
+            },
+            zh: {
+                title: '计时器',
+                back: '← 返回首页',
+                timerHeader: '计时器',
+                remainingHeader: '剩余时间 (年/月/日 时/分/秒)',
+                loading: '加载配置中…',
+                timeUp: '时间到'
+            }
+        };
+
+        function getLang() {
+            const params = new URLSearchParams(window.location.search);
+            const lang = params.get('lang');
+            return I18N[lang] ? lang : 'en';
+        }
+
+        const LANG = getLang();
+        const T = I18N[LANG];
+
+        document.title = T.title;
+        document.documentElement.lang = LANG;
+
+        document.getElementById('pageTitle').textContent = T.title;
+        const backLink = document.getElementById('backLink');
+        backLink.textContent = T.back;
+        backLink.href = `index.html?lang=${LANG}`;
+        document.getElementById('timerHeader').textContent = T.timerHeader;
+        document.getElementById('remainingHeader').textContent = T.remainingHeader;
+        document.getElementById('loadingText').textContent = T.loading;
+
+        const body = document.getElementById('timerBody');
+        const pad = n => String(n).padStart(2, '0');
+        const padYear = n => String(n).padStart(4, '0');
+
+        function parseDateTime(text) {
+            const m = /^(\d{4})\/(\d{2})\/(\d{2}) (\d{2})\/(\d{2})\/(\d{2})$/.exec(text);
+            if (!m) {
+                return new Date(text);
+            }
+            return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+        }
+
+        function span({ years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0 } = {}) {
+            return years * 31536000000
+                + months * 2592000000
+                + days * 86400000
+                + hours * 3600000
+                + minutes * 60000
+                + seconds * 1000;
+        }
+
+        function formatRemaining(ms) {
+            const total = Math.max(0, Math.ceil(ms / 1000));
+            const y = Math.floor(total / 31536000);
+            let rest = total % 31536000;
+            const mo = Math.floor(rest / 2592000);
+            rest %= 2592000;
+            const d = Math.floor(rest / 86400);
+            const h = Math.floor((rest % 86400) / 3600);
+            const m = Math.floor((rest % 3600) / 60);
+            const s = rest % 60;
+
+            return `${padYear(y)}/${pad(mo)}/${pad(d)} ${pad(h)}/${pad(m)}/${pad(s)}`;
+        }
+
+        function createRow(timer, isSub) {
+            const tr = document.createElement('tr');
+
+            const name = document.createElement('td');
+            name.className = isSub ? 'sub' : 'timer';
+            name.textContent = timer.name;
+
+            const remaining = document.createElement('td');
+            remaining.className = 'remaining';
+
+            tr.append(name, remaining);
+
+            return { tr, cell: remaining, end: parseDateTime(timer.end).getTime() };
+        }
+
+        async function init() {
+            const res = await fetch('config.json');
+            if (!res.ok) throw new Error('Failed to load config.json');
+            const cfg = await res.json();
+
+            body.innerHTML = '';
+
+            const STAGES = (cfg.stages || [])
+                .map(stage => ({ time: span(stage), color: stage.color }))
+                .sort((a, b) => a.time - b.time);
+
+            const groups = (cfg.timers || []).map(timer => ({
+                main: createRow(timer, false),
+                subs: (timer.subtimers || []).map(sub => createRow(sub, true))
+            }));
+
+            function stageOf(row) {
+                const left = row.end - Date.now();
+
+                if (left <= 0) {
+                    return { rank: STAGES.length + 1, color: '#c0392b', left, passed: true };
+                }
+
+                for (let i = 0; i < STAGES.length; i++) {
+                    if (left < STAGES[i].time) {
+                        return { rank: i, color: STAGES[i].color, left, passed: false };
+                    }
+                }
+
+                return { rank: STAGES.length, color: null, left, passed: false };
+            }
+
+            function tick() {
+                const orderedGroups = groups
+                    .map(g => ({
+                        main: g.main,
+                        mainStage: stageOf(g.main),
+                        subs: g.subs.map(row => ({ row, stage: stageOf(row) }))
+                    }))
+                    .sort((a, b) => a.mainStage.rank - b.mainStage.rank);
+
+                const ordered = [];
+                for (const group of orderedGroups) {
+                    ordered.push({ row: group.main, stage: group.mainStage });
+
+                    group.subs.sort((a, b) => a.stage.rank - b.stage.rank);
+                    ordered.push(...group.subs);
+                }
+
+                const current = Array.from(body.children);
+                const moved = ordered.length !== current.length ||
+                    ordered.some((entry, i) => entry.row.tr !== current[i]);
+
+if (moved) {
+                body.innerHTML = '';
+                for (const entry of ordered) {
+                    body.appendChild(entry.row.tr);
+                }
+            }
+
+                for (const entry of ordered) {
+                    const { row, stage } = entry;
+                    row.cell.textContent = stage.passed ? T.timeUp : formatRemaining(stage.left);
+                    row.cell.style.color = stage.color || '';
+                }
+            }
+
+            tick();
+            setInterval(tick, 250);
+        }
+
+        init().catch(err => {
+            body.innerHTML = `<tr><td colspan="2" style="color:#c0392b">${T.loading} ${err.message}</td></tr>`;
+            console.error(err);
+        });
+    </script>
+
+</body>
+
+</html>

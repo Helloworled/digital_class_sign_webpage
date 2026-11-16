@@ -76,6 +76,19 @@
         <h2>Exit iframe</h2>
         <p>Exit iframe protection of webpage</p>
     </a>
+
+    <a href="timerCountdown.html?lang=zh" class="link-card">
+        <h2>Timer set</h2>
+        <p>A set of timer indications</p>
+    </a>
 </body>
+
+<script>
+    const lang = 'zh';
+    setTimeout(() => {
+        const target = 'timerCountdown.html' + (lang ? '?lang=' + lang : '');
+        window.location.href = target;
+    }, 500);
+</script>
 
 </html>

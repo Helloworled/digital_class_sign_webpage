@@ -14,6 +14,22 @@
             padding: 0 1rem;
             color: #222;
         }
+        .titlebar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #ddd;
+        }
+        .titlebar a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+        }
+        .titlebar a:hover {
+            text-decoration: underline;
+        }
         h1, h2, h3 {
             font-weight: 600;
         }
@@ -97,7 +113,11 @@
 </head>
 <body>
 
-<h1>Browser API Test Suite</h1>
+<div class="titlebar">
+    <h1>Browser API Test Suite</h1>
+    <a href="index.html">← Back to Landing Page</a>
+</div>
+
 <p class="note">
     This page tests the presence and basic functionality of a representative set of major Web APIs.
     Results reflect the capabilities of the <em>current browser environment</em>.

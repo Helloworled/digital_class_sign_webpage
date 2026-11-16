@@ -14,6 +14,22 @@
     margin: 2rem auto;
     padding: 0 1rem;
   }
+  .titlebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #8883;
+  }
+  .titlebar a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+  }
+  .titlebar a:hover {
+    text-decoration: underline;
+  }
   h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
   h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #8884; padding-bottom: 0.3rem; }
   p.note { font-size: 0.92rem; color: #666; }
@@ -36,7 +52,11 @@
 </head>
 <body>
 
-<h1>Gesture-Gated Browser API Test Suite</h1>
+<div class="titlebar">
+    <h1>Gesture-Gated Browser API Test Suite</h1>
+    <a href="index.html">← Back to Landing Page</a>
+</div>
+
 <p class="note">
   Every probe below must be triggered by an explicit <strong>button click</strong>. Browsers block permission prompts, device pickers, and media access when they are called without a live user gesture. A <em>Pass</em> means the API was reachable and the gesture-gated call resolved or rejected in a way that proves the gate exists (for example, a permission prompt appeared and was denied by you). A <em>Partial</em> means the API exists but the call could not complete (usually permission denied or no device available). A <em>Fail</em> means the API is absent in this browser.
 </p>
